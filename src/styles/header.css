@@ -1,0 +1,71 @@
+#header{
+    background-color: red;
+    position: fixed;
+    top: 0;
+    
+    width: 100vw;
+    height: 60px;
+
+    display: flex;
+    justify-content: space-around;
+}
+
+.headerTab{
+    background-color: aqua;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    padding-left: 15px;
+    padding-right: 15px
+}
+
+.headerTab--active{
+    background-color: deepskyblue;
+    font-weight: bold;
+}
+
+.headerTabHolder{
+    display: flex;
+    flex-direction: row;
+}
+
+.headerTitle{
+    font-size: 14px;
+    position: relative;
+    top: 40px;
+    left: 40px;
+    cursor: pointer;
+}
+
+.headerLogo{
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+}
+
+.headerAccountSection{
+    position: relative;
+    z-index: 1;
+    background-color: antiquewhite;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+}
+
+#headerAccountSectionName{
+    padding-right: 40px;
+}
+
+.headerAuthButton{
+    margin: 0 16px;
+    cursor: pointer;
+}
+
+#headerAccountSectionPlaceHolder{
+    background-color: blue;
+    border-radius: 60px;
+
+    height: 50px;
+    width: 50px;
+}
