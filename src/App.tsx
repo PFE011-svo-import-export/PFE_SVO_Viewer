@@ -1,51 +1,45 @@
-import { useState } from 'react'
+import { Routes, Route } from 'react-router-dom'
 import './styles/App.css'
 import Header from './components/header/header'
-import LandingPage from './pages/landingPage';
-import MapPage from './pages/simulationPage';
-import RoutePage from './pages/routePage';
-import InformationPage from './pages/informationPage';
+import ProtectedRoute from './components/ProtectedRoute'
+import LandingPage from './pages/landingPage'
+import SimulationPage from './pages/simulationPage'
+import RoutePage from './pages/routePage'
+import InformationPage from './pages/informationPage'
+import AuthPage from './pages/authPage'
+import ProcessusPage from './pages/processusPage'
+import ProfilePage from './pages/profilePage'
 
 /**
- * Main app and entry point of the SVO viewer 
- * 
- * l'application utilise un lifting state up pattern.
- * Props permet aux etats d'etre herites par les elements imbriques
- * les states peuvent etre changes via les callback 
- * 
- * props --> down
- * state --> up
+ * Main app and entry point of the SVO viewer.
+ *
+ * Le routage est gere par React Router (URLs reelles).
+ * L'etat d'authentification vit dans AuthProvider (cf. main.tsx) et est lu
+ * via useAuth() la ou il est necessaire (Header, ProtectedRoute).
  */
-
 function App() {
-  const [currentView, setCurrentView] = useState("landing");
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-
-  const renderView = () => {
-    switch(currentView){
-      case "landing":
-        console.log(currentView);
-        return <LandingPage/>
-      case "simulation":
-        return <MapPage/>
-      case "route":
-        return <RoutePage/>
-      case "info":
-        return <InformationPage/>
-      default:
-        console.log(currentView);
-        return <LandingPage/>
-    }
-  }
-
   return (
     <div id='app'>
-      <Header
-        currentView={currentView}
-        onViewChange={setCurrentView}
-        isLoggedIn={isLoggedIn}
-        onLoginChange={setIsLoggedIn}/>
-      <main>{renderView()}</main>
+      <Header />
+      <main>
+        <Routes>
+          {/* Routes publiques : toujours accessibles */}
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/login" element={<AuthPage />} />
+          <Route path="/simulation" element={<SimulationPage />} />
+          <Route path="/route" element={<RoutePage />} />
+          <Route path="/info" element={<InformationPage />} />
+
+          {/* Routes protegees : connexion requise */}
+          <Route element={<ProtectedRoute />}>
+            <Route path="/processus" element={<ProcessusPage />} />
+            <Route path="/profile" element={<ProfilePage />} />
+          </Route>
+
+          {/* Fallback */}
+          <Route path="*" element={<LandingPage />} />
+        </Routes>
+      </main>
     </div>
   )
 }

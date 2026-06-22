@@ -1,32 +1,19 @@
+import { NavLink, useNavigate } from "react-router-dom";
 import '../../styles/header.css'
+import { useAuth } from "../../context/AuthContext";
 
-export interface HeaderViewState {
-    currentView: string;
-    onViewChange: (view: string) => void;
-}
+/**
+ * Header principal du SVO viewer.
+ *
+ * Navigation via React Router (NavLink / useNavigate).
+ * Etat d'authentification lu depuis le contexte (useAuth).
+ */
 
-export interface HeaderAuthState {
-    isLoggedIn: boolean;
-    onLoginChange: (value: boolean) => void;
-    username?: string;
-}
-
-interface HeaderTabProps extends HeaderViewState {
-    title: string;
-    view: string;
-}
-
-interface HeaderLogoState extends HeaderViewState{
-    title: string
-}
-
-function HeaderLogo({ title, onViewChange }: HeaderLogoState) {
+function HeaderLogo({ title }: { title: string }) {
     return (
-        <div className="headerLogo"
-            onClick={() => onViewChange("landing")}
-        >
-            <div >{title}</div>
-        </div>
+        <NavLink to="/" className="headerLogo">
+            <div>{title}</div>
+        </NavLink>
     )
 }
 
@@ -38,61 +25,63 @@ export function HeaderTitle({ title }: { title: string }) {
     )
 }
 
-
-function HeaderTab({ title, view, currentView, onViewChange }: HeaderTabProps) {
-    const isActive = currentView === view;
+function HeaderTab({ title, to }: { title: string; to: string }) {
     return (
-        <div
-            className={isActive ? "headerTab headerTab--active" : "headerTab"}
-            onClick={() => onViewChange(view)}
+        <NavLink
+            to={to}
+            className={({ isActive }) => (isActive ? "headerTab headerTab--active" : "headerTab")}
         >
             <div>{title}</div>
-        </div>
+        </NavLink>
     )
 }
 
-/**
- * Holder for the different tabs.
- * Relaie l'etat de la vue courante a chaque onglet.
- */
-function HeaderTabHolder({ currentView, onViewChange }: HeaderViewState) {
+function HeaderTabHolder() {
+    const { isAuthenticated } = useAuth();
     return (
         <div className="headerTabHolder">
-            <HeaderTab title="Simulation" view="simulation" currentView={currentView} onViewChange={onViewChange} />
-            <HeaderTab title="Route" view="route" currentView={currentView} onViewChange={onViewChange} />
-            <HeaderTab title="Information" view="info" currentView={currentView} onViewChange={onViewChange} />
+            <HeaderTab title="Simulation" to="/simulation" />
+            <HeaderTab title="Route" to="/route" />
+            <HeaderTab title="Information" to="/info" />
+            {/* Onglet visible uniquement apres connexion */}
+            {isAuthenticated && <HeaderTab title="Processus" to="/processus" />}
         </div>
     )
 }
 
-function HeaderAccountSection({ isLoggedIn, onLoginChange, username = "Guest" }: HeaderAuthState) {
+function HeaderAccountSection() {
+    const { role, isAuthenticated, logout } = useAuth();
+    const navigate = useNavigate();
+
+    const handleLogout = () => {
+        logout();
+        navigate("/");
+    };
+
     return (
         <div className="headerAccountSection">
-            {isLoggedIn ? (
+            {isAuthenticated ? (
                 <>
-                    <p id="headerAccountSectionName">{username}</p>
-                    <div id="headerAccountSectionPlaceHolder"></div>
-                    <button className="headerAuthButton" onClick={() => onLoginChange(false)}>Logout</button>
+                    {/* Acces au profil de l'utilisateur connecte */}
+                    <NavLink to="/profile" className="headerProfileLink">
+                        <p id="headerAccountSectionName">{role}</p>
+                        <div id="headerAccountSectionPlaceHolder"></div>
+                    </NavLink>
+                    <button className="headerAuthButton" onClick={handleLogout}>Logout</button>
                 </>
             ) : (
-                <button className="headerAuthButton" onClick={() => onLoginChange(true)}>Login</button>
+                <button className="headerAuthButton" onClick={() => navigate("/login")}>Login</button>
             )}
         </div>
     )
 }
 
-/**
- * Header principal du SVO viewer.
- * Recoit l'etat de la vue depuis App et le transmet aux onglets.
- */
-type HeaderProps = HeaderViewState & HeaderAuthState;
-
-function Header({ currentView, onViewChange, isLoggedIn, onLoginChange, username }: HeaderProps) {
+function Header() {
     return (
         <div id="header">
-            <HeaderLogo title="S.V.O" currentView={currentView} onViewChange={onViewChange} />
-            <HeaderTabHolder currentView={currentView} onViewChange={onViewChange} />
-            <HeaderAccountSection isLoggedIn={isLoggedIn} onLoginChange={onLoginChange} username={username} />
+            <HeaderLogo title="S.V.O" />
+            <HeaderTabHolder />
+            <HeaderAccountSection />
         </div>
     )
 }

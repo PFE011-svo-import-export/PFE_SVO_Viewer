@@ -1,13 +1,16 @@
-import { Component } from "react";
+import MapView from "../components/map/MapView";
 import '../styles/pages/routePage.css'
 
-class RoutePage extends Component{
-    render(){
-        return(
-            <div id = "routePage">
-                something like a route
-            </div>
-        )
-    }
+/**
+ * Page Route : carte qui remplit l'espace sous le header (qui reste visible).
+ * Les overlays (panneaux d'interaction) viendront plus tard en children de MapView.
+ */
+function RoutePage() {
+    return (
+        <div id="routePage">
+            <MapView width="100%" height="100%" />
+        </div>
+    )
 }
+
 export default RoutePage;

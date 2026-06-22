@@ -1,0 +1,12 @@
+@startuml
+' skin param
+hide footbox
+
+' users
+participant User as u
+participant Server as s
+participant Auth as auth
+
+
+
+@enduml
