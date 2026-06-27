@@ -1,0 +1,44 @@
+.landingFilters {
+    display: flex;
+    flex-direction: row;
+    gap: 1rem;
+    padding: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.landingFilter {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    flex: 1 1 0;
+    min-width: 12rem;
+}
+
+.landingFilterLabel {
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.landingFilterSelect {
+    padding: 0.5rem 0.6rem;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    background: #fff;
+    font-size: 0.9rem;
+}
+
+.landingSimulateButton {
+    margin: 0 1.5rem;
+    padding: 0.6rem 1.5rem;
+    border: none;
+    border-radius: 6px;
+    background: #2563eb;
+    color: #fff;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.landingSimulateButton:hover {
+    background: #1d4ed8;
+}
