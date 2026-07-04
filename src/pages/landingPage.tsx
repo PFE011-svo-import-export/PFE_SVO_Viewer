@@ -2,28 +2,31 @@ import { useEffect, useState } from "react";
 import {
     getCountries,
     getIncoterms,
+    getMerchandise,
     type Country,
     type Incoterm,
+    type Merchandise,
 } from "../services/catalog";
 import '../styles/pages/landingPage.css'
 
 /**
  * Page d'accueil.
  *
- * Charge les données de référence (pays, incoterms) depuis la PlateformeSVO et
- * alimente les listes déroulantes. La marchandise n'est pas encore disponible
- * côté API : son menu reste désactivé. Le bouton « Simuler » n'est actif que
- * lorsque les champs requis sont sélectionnés.
+ * Charge les données de référence (marchandises, pays, incoterms) depuis la
+ * PlateformeSVO et alimente les listes déroulantes. Le bouton « Simuler »
+ * n'est actif que lorsque les champs requis sont sélectionnés.
  */
 function LandingPage() {
     // Périmètre de simulation : exportateurs et importateurs sont des listes
     // distinctes (restreintes côté API), d'où deux états séparés.
+    const [merchandises, setMerchandises] = useState<Merchandise[]>([]);
     const [exporters, setExporters] = useState<Country[]>([]);
     const [importers, setImporters] = useState<Country[]>([]);
     const [incoterms, setIncoterms] = useState<Incoterm[]>([]);
     const [loadError, setLoadError] = useState("");
 
-    // Sélections de l'utilisateur (code du pays / de l'incoterm, "" = aucune).
+    // Sélections de l'utilisateur (code de la marchandise / du pays / de l'incoterm, "" = aucune).
+    const [merchandise, setMerchandise] = useState("");
     const [exporter, setExporter] = useState("");
     const [importer, setImporter] = useState("");
     const [incoterm, setIncoterm] = useState("");
@@ -32,12 +35,14 @@ function LandingPage() {
         let cancelled = false;
 
         Promise.all([
+            getMerchandise(),
             getCountries("exporter"),
             getCountries("importer"),
             getIncoterms(),
         ])
-            .then(([exporterList, importerList, incotermList]) => {
+            .then(([merchandiseList, exporterList, importerList, incotermList]) => {
                 if (cancelled) return;
+                setMerchandises(merchandiseList);
                 setExporters(exporterList);
                 setImporters(importerList);
                 setIncoterms(incotermList);
@@ -49,11 +54,11 @@ function LandingPage() {
         return () => { cancelled = true; };
     }, []);
 
-    const canSimulate = exporter !== "" && importer !== "" && incoterm !== "";
+    const canSimulate = merchandise !== "" && exporter !== "" && importer !== "" && incoterm !== "";
 
     const handleSimulate = () => {
         // TODO: brancher sur la simulation de processus une fois l'API prête.
-        alert(`Export: ${exporter} | Import: ${importer} | Incoterm: ${incoterm}`);
+        alert(`Marchandise: ${merchandise} | Export: ${exporter} | Import: ${importer} | Incoterm: ${incoterm}`);
     };
 
     return (
@@ -61,8 +66,15 @@ function LandingPage() {
             <div className="landingFilters">
                 <label className="landingFilter">
                     <span className="landingFilterLabel">Marchandise</span>
-                    <select className="landingFilterSelect" defaultValue="" disabled>
-                        <option value="" disabled>Bientôt disponible…</option>
+                    <select
+                        className="landingFilterSelect"
+                        value={merchandise}
+                        onChange={(e) => setMerchandise(e.target.value)}
+                    >
+                        <option value="" disabled>Sélectionner…</option>
+                        {merchandises.map((m) => (
+                            <option key={m.codeSH} value={m.codeSH}>{m.name}</option>
+                        ))}
                     </select>
                 </label>
 

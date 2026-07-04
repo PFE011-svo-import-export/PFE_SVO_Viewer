@@ -1,10 +1,3 @@
-/**
- * Service de catalogue (données de référence).
- *
- * Parle aux endpoints publics de la PlateformeSVO (/countries, /incoterms) qui
- * alimentent les listes déroulantes de la page d'accueil. Lecture seule, pas de
- * token requis — on utilise donc fetch directement (pas authFetch).
- */
 
 const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:5294";
 
@@ -21,6 +14,15 @@ export interface Incoterm {
     code: string;
     name: string;
     description: string;
+}
+
+/** Marchandise renvoyée par GET /merchandise/catalog (cf. MerchandiseDto). */
+export interface Merchandise {
+    codeSH: string;
+    name: string;
+    description: string;
+    quantityType: string;
+    priceType: string;
 }
 
 async function getJson<T>(path: string): Promise<T> {
@@ -41,4 +43,8 @@ export function getCountries(role?: CountryRole): Promise<Country[]> {
 
 export function getIncoterms(): Promise<Incoterm[]> {
     return getJson<Incoterm[]>("/incoterms");
+}
+
+export function getMerchandise(): Promise<Merchandise[]> {
+    return getJson<Merchandise[]>("/merchandise/catalog");
 }
