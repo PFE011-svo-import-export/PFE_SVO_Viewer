@@ -41,7 +41,6 @@ function HeaderTabHolder() {
     return (
         <div className="headerTabHolder">
             <HeaderTab title="Simulation" to="/simulation" />
-            <HeaderTab title="Route" to="/route" />
             <HeaderTab title="Information" to="/info" />
             {/* Onglet visible uniquement apres connexion */}
             {isAuthenticated && <HeaderTab title="Processus" to="/processus" />}

@@ -7,6 +7,10 @@ import {
     type Incoterm,
     type Merchandise,
 } from "../services/catalog";
+import { 
+    postProcess, 
+    type Portrait 
+} from "../services/process";
 import '../styles/pages/landingPage.css'
 
 /**
@@ -57,6 +61,16 @@ function LandingPage() {
     const canSimulate = merchandise !== "" && exporter !== "" && importer !== "" && incoterm !== "";
 
     const handleSimulate = () => {
+        console.log("Inside handleSimulate()")
+        const portrait: Portrait = {
+            codeSH: merchandise, 
+            departure: exporter, 
+            arrival: importer, 
+            Incoterm: incoterm
+        };
+
+        postProcess(portrait);
+
         // TODO: brancher sur la simulation de processus une fois l'API prête.
         alert(`Marchandise: ${merchandise} | Export: ${exporter} | Import: ${importer} | Incoterm: ${incoterm}`);
     };
