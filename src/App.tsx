@@ -27,6 +27,7 @@ function App() {
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<AuthPage />} />
           <Route path="/simulation" element={<SimulationPage />} />
+          <Route path="/simulation/:processCode" element={<SimulationPage />} />
           <Route path="/route" element={<RoutePage />} />
           <Route path="/info" element={<InformationPage />} />
 

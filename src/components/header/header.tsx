@@ -31,7 +31,7 @@ function HeaderTab({ title, to }: { title: string; to: string }) {
             to={to}
             className={({ isActive }) => (isActive ? "headerTab headerTab--active" : "headerTab")}
         >
-            <div>{title}</div>
+            <div className="HeaderTabTitle">{title}</div>
         </NavLink>
     )
 }

@@ -1,0 +1,55 @@
+#footer {
+    position: fixed;
+    left: 0;
+    bottom: 0;
+    width: 100vw;
+    height: 40px;
+    background: rgba(0,0,0,0.2);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    overflow: hidden;
+    z-index: 10;
+}
+
+.footerMessage {
+    padding: 0 15px;
+    font-size: 0.85rem;
+    color: black;
+}
+
+.footerTickerTrack {
+    display: flex;
+    width: max-content;
+    animation-name: footerTickerScroll;
+    animation-timing-function: linear;
+    animation-iteration-count: infinite;
+}
+
+.footerTickerBlock,
+.footerTickerGroup {
+    display: flex;
+    flex-shrink: 0;
+}
+
+.footerTickerItem {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0 1.5rem;
+    white-space: nowrap;
+    font-size: 0.85rem;
+}
+
+.footerTickerLabel {
+    color: black;
+}
+
+.footerTickerValue {
+    color: rgba(20,200,80,1);
+}
+
+@keyframes footerTickerScroll {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+}
