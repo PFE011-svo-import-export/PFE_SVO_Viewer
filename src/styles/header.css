@@ -1,8 +1,13 @@
+#header, #header *{
+    font-family: "Bitcount Single", sans-serif;
+}
+
 #header{
-    background-color: red;
+    background-color: transparent;
     position: fixed;
     top: 0;
-    
+    z-index: 100;
+
     width: 100vw;
     height: 60px;
 
@@ -11,14 +16,15 @@
 }
 
 .headerTab{
-    background-color: aqua;
+    background-color: transparent;
     cursor: pointer;
     display: flex;
-    align-items: center;
+    align-items: flex-end;
     padding-left: 15px;
     padding-right: 15px;
     margin-right: 5px;
     margin-left: 5px;
+    font-size: 28px;
 }
 
 .headerTab--active{
@@ -41,8 +47,9 @@
 
 .headerLogo{
     display: flex;
-    align-items: center;
+    align-items: flex-end;
     cursor: pointer;
+    font-size: 36px;
 }
 
 .headerAccountSection{
@@ -50,7 +57,7 @@
     z-index: 1;
     background-color: antiquewhite;
     display: flex;
-    align-items: center;
+    align-items: flex-end;
     justify-content: center;
     height: 100%;
 }

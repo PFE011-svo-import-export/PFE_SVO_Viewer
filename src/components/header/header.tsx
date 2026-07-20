@@ -1,4 +1,4 @@
-import { NavLink, useNavigate } from "react-router-dom";
+import { NavLink, useNavigate, useLocation } from "react-router-dom";
 import '../../styles/header.css'
 import { useAuth } from "../../context/AuthContext";
 
@@ -10,10 +10,12 @@ import { useAuth } from "../../context/AuthContext";
  */
 
 function HeaderLogo({ title }: { title: string }) {
+    const navigate = useNavigate();
+
     return (
-        <NavLink to="/" className="headerLogo">
+        <div onClick={() => navigate("/")} className="headerLogo">
             <div>{title}</div>
-        </NavLink>
+        </div>
     )
 }
 
@@ -26,13 +28,17 @@ export function HeaderTitle({ title }: { title: string }) {
 }
 
 function HeaderTab({ title, to }: { title: string; to: string }) {
+    const navigate = useNavigate();
+    const location = useLocation();
+    const isActive = location.pathname === to;
+
     return (
-        <NavLink
-            to={to}
-            className={({ isActive }) => (isActive ? "headerTab headerTab--active" : "headerTab")}
+        <div
+            onClick={() => navigate(to)}
+            className={isActive ? "headerTab headerTab--active" : "headerTab"}
         >
             <div className="HeaderTabTitle">{title}</div>
-        </NavLink>
+        </div>
     )
 }
 
@@ -40,8 +46,8 @@ function HeaderTabHolder() {
     const { isAuthenticated } = useAuth();
     return (
         <div className="headerTabHolder">
-            <HeaderTab title="Simulation" to="/simulation" />
-            <HeaderTab title="Information" to="/info" />
+            <HeaderTab title="CAFÉ" to="/simulation" />
+            <HeaderTab title="CAPD" to="/info" />
             {/* Onglet visible uniquement apres connexion */}
             {isAuthenticated && <HeaderTab title="Processus" to="/processus" />}
         </div>
@@ -78,7 +84,7 @@ function HeaderAccountSection() {
 function Header() {
     return (
         <div id="header">
-            <HeaderLogo title="S.V.O" />
+            <HeaderLogo title="Simulateur" />
             <HeaderTabHolder />
             <HeaderAccountSection />
         </div>

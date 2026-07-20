@@ -46,10 +46,80 @@
 }
 
 .footerTickerValue {
-    color: rgba(20,200,80,1);
+    color: #24631e;
 }
 
 @keyframes footerTickerScroll {
     from { transform: translateX(0); }
     to { transform: translateX(-50%); }
+}
+
+
+#chatBot{
+    position: fixed;
+    right: 150px;
+    bottom: 45px;
+}
+
+.chatBotButton{
+    transition: 0.6s;
+
+    width: 80px;
+    height: 40px;
+    border-radius: 40px;
+    border: 2px;
+    border-style: solid;
+    border-color: #443223;
+    animation: chatBotButton 2s ease-in-out infinite alternate;
+
+    align-items: center;
+    justify-content: center;
+    justify-items: center;
+}
+
+.chatBotButton:hover{
+    transition: 0.6s;
+    width: 300px;
+    height: 450px;
+    border-radius: 10px;
+    animation: chatBotButton 2s ease-in-out ;
+
+    background-color: #7c796061;
+}
+
+.chatBotTextBox{
+    position:relative;
+    top: -50px;
+    width: 140px;
+    height: 24px;
+    background-color: #44322394;
+    border-radius: 10px;
+    border: 2px;
+    border-style: solid;
+    border-color: #443223;
+    justify-items: center;
+    align-items: center;
+    padding-top: 8px; 
+}
+
+.chatBotTextBoxArrow{
+    position: relative;
+    top: 10px;
+    width: 0; 
+    height: 0; 
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-top: 8px solid #443223;
+}
+
+.chatBotText{
+    font-family: "Playfair Display", serif;
+    letter-spacing: 0.5px;
+    font-size: 12px;
+    color: #fff5f5
+}
+
+@keyframes chatBotButton{
+    from{ background-color: #44422D;}
+    to {background-color: #7c796061;}
 }

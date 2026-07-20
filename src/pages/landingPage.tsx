@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import * as Select from "@radix-ui/react-select";
 import {
     getPorts,
     getIncoterms,
@@ -13,7 +14,54 @@ import {
     type Portrait
 } from "../services/process";
 import Footer from "../components/footer/footer";
+import ShaderBackground from "../components/shaders/ShaderBackground";
 import '../styles/pages/landingPage.css'
+
+/**
+ * Un select entièrement stylable (fond transparent inclus), contrairement
+ * au <select> natif dont le popup d'options est un widget du système
+ * d'exploitation qu'aucun CSS ne peut rendre transparent.
+ */
+function FilterSelect({
+    label,
+    placeholder,
+    value,
+    onValueChange,
+    options,
+}: {
+    label: string;
+    placeholder: string;
+    value: string;
+    onValueChange: (value: string) => void;
+    options: { value: string; label: string }[];
+}) {
+    return (
+        <label className="landingFilter">
+            <span className="landingFilterLabel">{label}</span>
+            <Select.Root value={value} onValueChange={onValueChange}>
+                <Select.Trigger className="landingFilterSelect">
+                    <Select.Value placeholder={placeholder} />
+                    <Select.Icon className="landingFilterSelectIcon">▾</Select.Icon>
+                </Select.Trigger>
+                <Select.Portal>
+                    <Select.Content
+                        className="landingFilterSelectContent"
+                        position="popper"
+                        sideOffset={4}
+                    >
+                        <Select.Viewport>
+                            {options.map((o) => (
+                                <Select.Item key={o.value} value={o.value} className="landingFilterSelectItem">
+                                    <Select.ItemText>{o.label}</Select.ItemText>
+                                </Select.Item>
+                            ))}
+                        </Select.Viewport>
+                    </Select.Content>
+                </Select.Portal>
+            </Select.Root>
+        </label>
+    );
+}
 
 /**
  * Page d'accueil.
@@ -38,6 +86,27 @@ function LandingPage() {
     const [departure, setDeparture] = useState("");
     const [arrival, setArrival] = useState("");
     const [incoterm, setIncoterm] = useState("");
+
+    // Mirrors fragment.glsl's circle position (center.x = 0) so the button
+    // can sit exactly inside the shader-drawn circle. uv.y = 0 always maps
+    // to vUv.y = 0.5 (the shader's horizontal symmetry line), but the
+    // horizontal position depends on the canvas's own aspect ratio, so it
+    // has to be recomputed whenever the window resizes.
+    const [circleLeftPercent, setCircleLeftPercent] = useState(90);
+
+    useEffect(() => {
+        const updateCirclePosition = () => {
+            const canvasWidth = window.innerWidth;
+            const canvasHeight = window.innerHeight * 0.55; // .shaderBackground's height: 55%
+            const aspect = canvasWidth / canvasHeight;
+            const vUvX = 1 - 0.50 / aspect;
+            setCircleLeftPercent(vUvX * 100);
+        };
+
+        updateCirclePosition();
+        window.addEventListener("resize", updateCirclePosition);
+        return () => window.removeEventListener("resize", updateCirclePosition);
+    }, []);
 
     useEffect(() => {
         let cancelled = false;
@@ -82,78 +151,61 @@ function LandingPage() {
 
     return (
         <div id="landingPage">
+            <ShaderBackground />
             <div className="landingFiltersHolder">
-                <div className="landingInstruction">INDIQUEZ LES <br /> CRITÈRES DE SIMULATION:</div>
+                <div className="landingInstruction">
+                    INDIQUEZ LES 
+                    <br /> 
+                    <div className="landingInstructionInnerText">
+
+                        CRITÈRES DE SIMULATION:
+                    </div>
+                </div>
                 <div className="landingFilters">
-                    <label className="landingFilter">
-                        <span className="landingFilterLabel">Marchandise</span>
-                        <select
-                            className="landingFilterSelect"
-                            value={merchandise}
-                            onChange={(e) => setMerchandise(e.target.value)}
-                        >
-                            <option value="" disabled>Sélectionner…</option>
-                            {merchandises.map((m) => (
-                                <option key={m.codeSH} value={m.codeSH}>{m.name}</option>
-                            ))}
-                        </select>
-                    </label>
+                    <FilterSelect
+                        label="Marchandise"
+                        placeholder="Sélectionner…"
+                        value={merchandise}
+                        onValueChange={setMerchandise}
+                        options={merchandises.map((m) => ({ value: m.codeSH, label: m.name }))}
+                    />
 
-                    <label className="landingFilter">
-                        <span className="landingFilterLabel">Port de départ</span>
-                        <select
-                            className="landingFilterSelect"
-                            value={departure}
-                            onChange={(e) => setDeparture(e.target.value)}
-                        >
-                            <option value="" disabled>Sélectionner…</option>
-                            {departurePorts.map((p) => (
-                                <option key={p.code} value={p.code}>{p.name} — {p.city}, {p.country}</option>
-                            ))}
-                        </select>
-                    </label>
+                    <FilterSelect
+                        label="Port de départ"
+                        placeholder="Sélectionner…"
+                        value={departure}
+                        onValueChange={setDeparture}
+                        options={departurePorts.map((p) => ({ value: p.code, label: `${p.name} — ${p.city}, ${p.country}` }))}
+                    />
 
-                    <label className="landingFilter">
-                        <span className="landingFilterLabel">Port d'arrivée</span>
-                        <select
-                            className="landingFilterSelect"
-                            value={arrival}
-                            onChange={(e) => setArrival(e.target.value)}
-                        >
-                            <option value="" disabled>Sélectionner…</option>
-                            {arrivalPorts.map((p) => (
-                                <option key={p.code} value={p.code}>{p.name} — {p.city}, {p.country}</option>
-                            ))}
-                        </select>
-                    </label>
+                    <FilterSelect
+                        label="Port d'arrivée"
+                        placeholder="Sélectionner…"
+                        value={arrival}
+                        onValueChange={setArrival}
+                        options={arrivalPorts.map((p) => ({ value: p.code, label: `${p.name} — ${p.city}, ${p.country}` }))}
+                    />
 
-                    <label className="landingFilter">
-                        <span className="landingFilterLabel">Incoterm</span>
-                        <select
-                            className="landingFilterSelect"
-                            value={incoterm}
-                            onChange={(e) => setIncoterm(e.target.value)}
-                        >
-                            <option value="" disabled>Sélectionner…</option>
-                            {incoterms.map((i) => (
-                                <option key={i.code} value={i.code}>
-                                    {i.code} — {i.name}
-                                </option>
-                            ))}
-                        </select>
-                        <button
-                            className="landingSimulateButton"
-                            onClick={handleSimulate}
-                            disabled={!canSimulate}
-                        >
-                            Simuler ►
-                        </button>
-                    </label>
+                    <FilterSelect
+                        label="Incoterm"
+                        placeholder="Sélectionner…"
+                        value={incoterm}
+                        onValueChange={setIncoterm}
+                        options={incoterms.map((i) => ({ value: i.code, label: `${i.code} — ${i.name}` }))}
+                    />
                 </div>
 
                 {loadError && <p className="landingError">{loadError}</p>}
 
             </div>
+            <button
+                className="landingSimulateButton"
+                onClick={handleSimulate}
+                disabled={!canSimulate}
+                style={{ left: `${circleLeftPercent}%` }}
+            >
+                Simuler ►
+            </button>
             <Footer showCarousel />
         </div>
     );

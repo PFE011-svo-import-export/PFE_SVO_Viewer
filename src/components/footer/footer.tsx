@@ -71,8 +71,6 @@ function Footer({ showCarousel = false }: { showCarousel?: boolean }) {
         return () => { cancelled = true; };
     }, [showCarousel]);
 
-    // Remplit la largeur du conteneur avec autant de répétitions du groupe
-    // de prix que nécessaire, recalculé au redimensionnement de la fenêtre.
     useLayoutEffect(() => {
         if (!showCarousel || !prices) return;
 
@@ -118,11 +116,21 @@ function Footer({ showCarousel = false }: { showCarousel?: boolean }) {
                         />
                     ))}
                 </div>
-                {/* Bloc dupliqué (masqué des lecteurs d'écran) pour boucler l'animation sans coupure. */}
                 <div className="footerTickerBlock" aria-hidden="true">
                     {Array.from({ length: repeatCount }, (_, i) => (
                         <TickerGroup key={`b-${i}`} keyPrefix={`b-${i}`} prices={prices} />
                     ))}
+                </div>
+
+            </div>
+            <div id = "chatBot">
+                <div className="chatBotButton">
+                    <div className="chatBotTextBox">
+                        <div className="chatBotText">
+                            Tu as une question?
+                        </div>
+                        <div className="chatBotTextBoxArrow"></div>
+                    </div>
                 </div>
             </div>
         </div>
