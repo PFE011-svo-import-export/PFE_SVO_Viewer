@@ -99,8 +99,8 @@ void main(){
 
     float grainFade = 1.0 - vUv.x;
     float grain = random(gl_FragCoord.xy + uTime) - 0.5;
-    color += grain * 0.3 * grainFade*2.0;
-    color += grain * 0.5 * circleMask;
+    color += grain * 0.5 * grainFade*2.0;
+    color += grain * 0.3 * circleMask;
 
     //Render
     gl_FragColor = vec4(color, coverage * 0.75);

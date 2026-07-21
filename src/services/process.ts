@@ -5,6 +5,7 @@ export interface Step {
     code: string;
     price: number;
     question: string | null;
+    description: string | null;
 }
 
 /** Phase d'une section (cf. PhaseDto). */
@@ -39,19 +40,23 @@ export interface Portrait{
 
 async function postJson<T>(path: string): Promise<T>{
     const url = `${API_URL}${path}`;
-    const response = await fetch(`${url}`, { method: "POST" });
-    console.log(`From process.postJson(path) ${url}`);
-    console.log(response);
+    const response = await fetch(url, { method: "POST" });
     if (!response.ok){
         throw new Error(`Erreur serveur (${response.status}) sur ${path}.`);
     }
     return (await response.json()) as T;
 }
+
 export function getProcess(processCode: string){
-    return postJson<Process>(`/process?portraitCode=${processCode}`);
+    return postJson<Process>(`/process/${encodeURIComponent(processCode)}`);
 }
 
 export function postProcess(portrait: Portrait){
-    const portraitCode = `${portrait.codeSH}.${portrait.departure}.${portrait.arrival}.${portrait.Incoterm}`;
-    return getProcess(portraitCode);
+    const params = new URLSearchParams({
+        codeSH: portrait.codeSH,
+        departure: portrait.departure,
+        arrival: portrait.arrival,
+        incoterm: portrait.Incoterm,
+    });
+    return postJson<Process>(`/process?${params.toString()}`);
 }
