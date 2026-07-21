@@ -2,18 +2,6 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { getCoffeePrices, type CoffeePrices } from "../../services/price";
 import "../../styles/footer.css";
 
-/**
- * Barre défilante (façon ticker boursier) présentant les prix du café.
- *
- * Données issues de la PlateformeSVO (GET /prices/coffee), rafraîchies côté
- * API toutes les 12h. Le nombre de répétitions du groupe de prix est calculé
- * à partir de la largeur disponible (plutôt que fixé à l'avance) afin que le
- * ruban remplisse toujours l'écran, sans quoi un large espace vide apparaît
- * entre deux passages sur les écrans larges. Le défilement continu est
- * obtenu en dupliquant ce bloc rempli et en animant le conteneur de 0% à
- * -50% (translation en CSS).
- */
-
 const PRICE_LABELS: { key: keyof CoffeePrices; label: string }[] = [
     { key: "composite", label: "ICO Composite" },
     { key: "colombianMilds", label: "Colombian Milds" },
