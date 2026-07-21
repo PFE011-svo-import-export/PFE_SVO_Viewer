@@ -6,13 +6,14 @@ import vertexShader from "../../assets/shaders/vertex.glsl";
 import fragmentShader from "../../assets/shaders/fragment.glsl";
 import "../../styles/shaderBackground.css";
 
-function ShaderPlane(){
+function ShaderPlane({ vertical = false}: { vertical?: boolean}){
     const materialRef = useRef<ShaderMaterial>(null);
 
     const uniforms = useMemo(() => ({
         uTime: { value: 0 },
-        uResolution: {value: new THREE.Vector2(0,0)}
-    }), []);
+        uResolution: {value: new THREE.Vector2(0,0)},
+        uVertical: {value: vertical ? 1.0 : 0.0 },
+    }), [vertical]);
 
     useFrame((state) => {
         if(materialRef.current){
@@ -35,14 +36,14 @@ function ShaderPlane(){
     )
 }
 
-function ShaderBackground(){
+function ShaderBackground({ vertical = false }: { vertical?: boolean }){
     return(
-        <div className="shaderBackground">
+        <div className={`shaderBackground${vertical ? " shaderBackgroundVertical" : ""}`}>
             <div className="dummyShader"></div>
             <div className="dummyShader2"></div>
             <div className="dummyCircle"></div>
             <Canvas>
-                <ShaderPlane/>
+                <ShaderPlane vertical= {vertical}/>
             </Canvas>
             <div className="dummyShader3"></div>
             <div className="dummyShader4"></div>

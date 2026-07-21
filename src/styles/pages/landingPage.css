@@ -69,8 +69,8 @@
 
 .landingFilterSelect {
     padding: 0.5rem 0.6rem;
-    background: rgba(0,0,0,0.2);
-    font-size: 0.9rem;
+    background: rgba(0,0,0,0.12);
+    font-size: 0.7rem;
     width: 100%;
     cursor: pointer;
     border: none;
@@ -84,7 +84,6 @@
 }
 
 .landingFilterSelect:focus {
-    background: transparent;
     outline: none;
 }
 
@@ -94,10 +93,11 @@
 
 .landingFilterSelectContent, .landingFilterSelectContent * {
     font-family: "Playfair Display", serif;
+    font-size: 0.7rem;
 }
 
 .landingFilterSelectContent {
-    background: transparent;
+    background: rgba(0,0,0,0.04);
     z-index: 150;
     max-height: 40vh;
     overflow: auto;
@@ -107,10 +107,11 @@
     padding: 0.5rem 0.6rem;
     cursor: pointer;
     outline: none;
+    font-size: 0.7rem;
 }
 
 .landingFilterSelectItem[data-highlighted] {
-    background: rgba(0,0,0,0.15);
+    background: rgba(0,0,0,0.12);
 }
 
 .landingSimulateButton {

@@ -2,6 +2,7 @@
 //Uniform
 uniform float uTime;
 uniform vec2 uResolution;
+uniform float uVertical; 
 
 varying vec2 vUv;
 
@@ -13,10 +14,6 @@ float random(vec2 st){
     return fract(sin(dot(st, vec2(12.9898, 78.233))) * 43758.5453123)/2.0;
 }
 
-//A smooth version of abs(): same value away from zero, but rounds off
-//the sharp corner right at zero instead of having an abrupt slope change.
-//abs()'s corner is invisible in the raw distance value, but shows up as
-//a seam once lighting reads the SDF's gradient across the mirror fold.
 float smoothAbs(float x, float k){
     return sqrt(x*x + k*k) - k;
 }
@@ -41,7 +38,9 @@ void main(){
 
     float offsetCoefficient = 0.1;
     float baseRadius = 0.68;
-    vec2 center = vec2(uv.x - uResolution.x/uResolution.y + baseRadius + (float(nbOfCircle-1)*offsetCoefficient), uv.y);
+    vec2 horizontalCenter = vec2(uv.x - uResolution.x/uResolution.y + baseRadius + (float(nbOfCircle-1)*offsetCoefficient), uv.y);
+    vec2 verticalCenter   = vec2(uv.x, uv.y - 1.0 + baseRadius + (float(nbOfCircle-1)*offsetCoefficient));
+    vec2 center = mix(horizontalCenter, verticalCenter, uVertical);    
     float thickness = 0.003;
     float aa = 0.001;
 
@@ -51,9 +50,6 @@ void main(){
     //Generate shape
     //Arches
     vec3 color = vec3(0.0);
-    //Tracks whether ANY shape (a ring or the circle) covers this pixel -
-    //drives the final alpha so untouched background stays fully
-    //transparent instead of painting black over the page's own CSS.
     float coverage = 0.0;
     for(int i = 0; i < nbOfCircle; i++){
         float offset = float(nbOfCircle - 2 - i) * offsetCoefficient;
@@ -62,7 +58,8 @@ void main(){
         float radius = baseRadius + offset;
         float height = baseRadius + offset;
 
-        float currentArchSigned = sdfArch(archPos.yx, radius, height);
+        vec2 archInputMain = mix(archPos.yx, archPos, uVertical);
+        float currentArchSigned = sdfArch(archInputMain, radius, height);
 
         float ringMask = 1.0 - smoothstep(-aa, aa, currentArchSigned);
 
@@ -70,10 +67,14 @@ void main(){
         vec3 ringColor = mix(outerColor, innerColor, t);
 
         float eps = 0.001;
-        float gradX = sdfArch((archPos + vec2(eps, 0.0)).yx, radius, height)
-                    - sdfArch((archPos - vec2(eps, 0.0)).yx, radius, height);
-        float gradY = sdfArch((archPos + vec2(0.0, eps)).yx, radius, height)
-                    - sdfArch((archPos - vec2(0.0, eps)).yx, radius, height);
+        vec2 gradXPlus  = mix((archPos + vec2(eps,0.0)).yx, archPos + vec2(eps,0.0), uVertical);
+        vec2 gradXMinus = mix((archPos - vec2(eps,0.0)).yx, archPos - vec2(eps,0.0), uVertical);
+        float gradX = sdfArch(gradXPlus, radius, height) - sdfArch(gradXMinus, radius, height);
+        
+        vec2 gradYPlus  = mix((archPos + vec2(0.0,eps)).yx, archPos + vec2(0.0,eps), uVertical);
+        vec2 gradYMinus = mix((archPos - vec2(0.0,eps)).yx, archPos - vec2(0.0,eps), uVertical);
+        float gradY = sdfArch(gradYPlus, radius, height) - sdfArch(gradYMinus, radius, height);
+        
         vec2 normal = normalize(vec2(gradX, gradY));
 
         vec2 lightDir = normalize(vec2(1.0, -0.10));
@@ -97,7 +98,7 @@ void main(){
     color = mix(color, vec3(0.0), circleBorderMask);
     coverage = max(coverage, circleBorderMask);
 
-    float grainFade = 1.0 - vUv.x;
+    float grainFade = mix(1.0 - vUv.x, 1.0 - vUv.y, uVertical);
     float grain = random(gl_FragCoord.xy + uTime) - 0.5;
     color += grain * 0.5 * grainFade*2.0;
     color += grain * 0.3 * circleMask;

@@ -122,6 +122,7 @@ function Footer({ showCarousel = false }: { showCarousel?: boolean }) {
                     ))}
                 </div>
 
+            {/*CHATBOT SECTION */}
             </div>
             <div id = "chatBot">
                 <div className="chatBotButton">

@@ -1,4 +1,29 @@
 #simulationPage {
-    padding: 80px 40px;
     background-color:  #DDBFA3;
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    flex-direction: row;
+    overflow: hidden;
+}
+
+.processBox {
+    flex: 1 1 auto;
+    height: 100%;
+    padding: 80px 40px;
+    overflow-y: auto;
+}
+
+.shaderBackgroundHolder {
+    order: 1;
+    flex: 0 0 340px;
+    height: 100%;
+    position: relative;
+    overflow: hidden;
+    pointer-events: none;
+}
+
+.shaderBackgroundHolder .shaderBackground {
+    top: 0;
+    height: 100%;
 }

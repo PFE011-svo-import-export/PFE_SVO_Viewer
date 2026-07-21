@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { getProcess, type Process } from "../services/process";
 import '../styles/pages/simulationPage.css'
+import Footer from "../components/footer/footer";
+import ShaderBackground from "../components/shaders/ShaderBackground";
 
 function SimulationPage() {
     const { processCode } = useParams<{ processCode: string }>();
@@ -40,6 +42,12 @@ function SimulationPage() {
 
     return (
         <div id="simulationPage">
+            <div className="shaderBackgroundHolder">
+                <div className="shaderBackgroundRotator">
+                    <ShaderBackground />
+                </div>
+            </div>
+            <div className="processBox">
             <h1>{process.code}</h1>
             {process.sections.map((section) => (
                 <section key={section.code} className="simulationSection">
@@ -56,6 +64,8 @@ function SimulationPage() {
                     ))}
                 </section>
             ))}
+            </div>
+            <Footer showCarousel />
         </div>
     );
 }

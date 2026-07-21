@@ -17,11 +17,7 @@ import Footer from "../components/footer/footer";
 import ShaderBackground from "../components/shaders/ShaderBackground";
 import '../styles/pages/landingPage.css'
 
-/**
- * Un select entièrement stylable (fond transparent inclus), contrairement
- * au <select> natif dont le popup d'options est un widget du système
- * d'exploitation qu'aucun CSS ne peut rendre transparent.
- */
+
 function FilterSelect({
     label,
     placeholder,
@@ -86,12 +82,7 @@ function LandingPage() {
     const [departure, setDeparture] = useState("");
     const [arrival, setArrival] = useState("");
     const [incoterm, setIncoterm] = useState("");
-
-    // Mirrors fragment.glsl's circle position (center.x = 0) so the button
-    // can sit exactly inside the shader-drawn circle. uv.y = 0 always maps
-    // to vUv.y = 0.5 (the shader's horizontal symmetry line), but the
-    // horizontal position depends on the canvas's own aspect ratio, so it
-    // has to be recomputed whenever the window resizes.
+    
     const [circleLeftPercent, setCircleLeftPercent] = useState(90);
 
     useEffect(() => {
