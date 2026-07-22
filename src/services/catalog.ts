@@ -59,5 +59,5 @@ export function getIncoterms(): Promise<Incoterm[]> {
 }
 
 export function getMerchandise(): Promise<Merchandise[]> {
-    return getJson<Merchandise[]>("/merchandise");
+    return getJson<Merchandise[]>("/merchandise/catalog");
 }
