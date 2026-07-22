@@ -9,6 +9,14 @@ export interface Country {
     region: string;
 }
 
+/** Port renvoyé par GET /ports (cf. PortDto). */
+export interface Port {
+    code: string;
+    name: string;
+    city: string;
+    country: string;
+}
+
 /** Incoterm renvoyé par GET /incoterms (cf. IncotermDto). */
 export interface Incoterm {
     code: string;
@@ -25,7 +33,7 @@ export interface Merchandise {
     priceType: string;
 }
 
-async function getJson<T>(path: string): Promise<T> {
+export async function getJson<T>(path: string): Promise<T> {
     const response = await fetch(`${API_URL}${path}`);
     if (!response.ok) {
         throw new Error(`Erreur serveur (${response.status}) sur ${path}.`);
@@ -39,6 +47,11 @@ export type CountryRole = "exporter" | "importer";
 export function getCountries(role?: CountryRole): Promise<Country[]> {
     const path = role ? `/countries?role=${role}` : "/countries";
     return getJson<Country[]>(path);
+}
+
+export function getPorts(role?: CountryRole): Promise<Port[]> {
+    const path = role ? `/ports?role=${role}` : "/ports";
+    return getJson<Port[]>(path);
 }
 
 export function getIncoterms(): Promise<Incoterm[]> {
