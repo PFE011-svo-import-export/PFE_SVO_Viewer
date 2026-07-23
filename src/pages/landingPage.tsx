@@ -125,15 +125,10 @@ function LandingPage() {
     const canSimulate = merchandise !== "" && departure !== "" && arrival !== "" && incoterm !== "";
 
     const handleSimulate = async () => {
-        const portrait: Portrait = {
-            codeSH: merchandise,
-            departure: departure,
-            arrival: arrival,
-            Incoterm: incoterm
-        };
 
         try {
-            const process = await postProcess(portrait);
+            console.log(`landingPage.handleSimulate()`);
+            const process = await postProcess(merchandise, departure, arrival, incoterm);
             navigate(`/simulation/${process.code}`);
         } catch {
             setLoadError("Impossible de lancer la simulation.");

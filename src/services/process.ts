@@ -51,12 +51,19 @@ export function getProcess(processCode: string){
     return postJson<Process>(`/process/${encodeURIComponent(processCode)}`);
 }
 
-export function postProcess(portrait: Portrait){
+export function postProcess(
+        codeSH: string,
+        departure: string,
+        arrival: string,
+        incoterm: string
+    ){
     const params = new URLSearchParams({
-        codeSH: portrait.codeSH,
-        departure: portrait.departure,
-        arrival: portrait.arrival,
-        incoterm: portrait.Incoterm,
+        codeSH: codeSH,
+        departure: departure,
+        arrival: arrival,
+        incoterm: incoterm,
     });
+
+    console.log(`process.postProcess() with code: ${params.toString()}`)
     return postJson<Process>(`/process?${params.toString()}`);
 }

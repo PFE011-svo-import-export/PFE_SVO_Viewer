@@ -8,8 +8,8 @@
     top: 0;
     z-index: 100;
 
-    width: 100vw;
-    height: 60px;
+    width: 100%;
+    height: 7vh;
 
     display: flex;
     justify-content: space-around;
@@ -38,7 +38,7 @@
 }
 
 .headerTitle{
-    font-size: 14px;
+    font-size: 2rem;
     position: relative;
     top: 40px;
     left: 40px;
@@ -49,7 +49,7 @@
     display: flex;
     align-items: flex-end;
     cursor: pointer;
-    font-size: 36px;
+    font-size: 2rem;
 }
 
 .headerAccountSection{
