@@ -32,7 +32,7 @@ function TickerGroup({ prices, keyPrefix, measureRef }: {
                 <TickerItem key={`${keyPrefix}-${key}`} label={label} value={prices[key]} />
             ))}
         </div>
-    );
+    );1
 }
 
 function Footer({ showCarousel = false }: { showCarousel?: boolean }) {
