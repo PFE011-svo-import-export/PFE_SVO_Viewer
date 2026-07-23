@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { getCoffeePrices, type CoffeePrices } from "../../services/price";
+import ChatBot from "./chatBot";
 import "../../styles/footer.css";
 
 const PRICE_LABELS: { key: keyof CoffeePrices; label: string }[] = [
@@ -110,18 +111,10 @@ function Footer({ showCarousel = false }: { showCarousel?: boolean }) {
                     ))}
                 </div>
 
+            </div>
+
             {/*CHATBOT SECTION */}
-            </div>
-            <div id = "chatBot">
-                <div className="chatBotButton">
-                    <div className="chatBotTextBox">
-                        <div className="chatBotText">
-                            Tu as une question?
-                        </div>
-                        <div className="chatBotTextBoxArrow"></div>
-                    </div>
-                </div>
-            </div>
+            <ChatBot />
         </div>
     );
 }
