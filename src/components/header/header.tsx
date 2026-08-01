@@ -46,8 +46,7 @@ function HeaderTabHolder() {
     const { isAuthenticated } = useAuth();
     return (
         <div className="headerTabHolder">
-            <HeaderTab title="CAFÉ" to="/simulation" />
-            <HeaderTab title="CAPD" to="/info" />
+            {/*<HeaderTab title="CAFÉ" to="/simulation" /><HeaderTab title="CAPD" to="/info" />*/}
             {/* Onglet visible uniquement apres connexion */}
             {isAuthenticated && <HeaderTab title="Processus" to="/processus" />}
         </div>
@@ -84,7 +83,7 @@ function HeaderAccountSection() {
 function Header() {
     return (
         <div id="header">
-            <HeaderLogo title="Simulateur" />
+            <HeaderLogo title="Carnet d'import" />
             <HeaderTabHolder />
             <HeaderAccountSection />
         </div>
