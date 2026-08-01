@@ -9,10 +9,6 @@ import {
     type Incoterm,
     type Merchandise,
 } from "../services/catalog";
-import {
-    postProcess,
-    type Portrait
-} from "../services/process";
 import Footer from "../components/footer/footer";
 import ShaderBackground from "../components/shaders/ShaderBackground";
 import '../styles/pages/landingPage.css'
@@ -124,20 +120,16 @@ function LandingPage() {
 
     const canSimulate = merchandise !== "" && departure !== "" && arrival !== "" && incoterm !== "";
 
-    const handleSimulate = async () => {
-        const portrait: Portrait = {
+    // Les criteres sont transmis a la page Processus par l'URL : c'est elle qui
+    // lance la construction (et ils survivent au detour par /login si besoin).
+    const handleSimulate = () => {
+        const params = new URLSearchParams({
             codeSH: merchandise,
-            departure: departure,
-            arrival: arrival,
-            Incoterm: incoterm
-        };
-
-        try {
-            const process = await postProcess(portrait);
-            navigate(`/simulation/${process.code}`);
-        } catch {
-            setLoadError("Impossible de lancer la simulation.");
-        }
+            departureCode: departure,
+            arrivalCode: arrival,
+            incotermCode: incoterm,
+        });
+        navigate(`/processus?${params.toString()}`);
     };
 
     return (
