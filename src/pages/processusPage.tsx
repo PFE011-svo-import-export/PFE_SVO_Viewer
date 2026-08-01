@@ -64,6 +64,32 @@ function sectionOf(step: BuildStep): (typeof SECTIONS)[number] | null {
     return SECTIONS.find((section) => section.letter === letter) ?? null;
 }
 
+/**
+ * Une phase correspond au prefixe du code d'etape ("A-1.30" -> "A-1"), ce qui
+ * recoupe exactement les frontieres marquees par EndPhase cote backend.
+ */
+function phaseKeyOf(step: BuildStep): string {
+    return step.code.split(".")[0];
+}
+
+/** Libelles de presentation; on retombe sur la section si le code est inconnu. */
+const PHASE_LABELS: Record<string, string> = {
+    "A-0": "Inscriptions et licences",
+    "A-1": "Prix et conformité",
+    "A-2": "Bon de commande",
+    "A-3": "Prestataires de services",
+    "A-4": "Courtier en douane",
+    "B-0": "Préparation et départ",
+    "C-0": "Transport international",
+    "D-0": "Arrivée et dédouanement",
+    "D-1": "Acheminement local",
+    "D-2": "Inspection et archivage",
+};
+
+function phaseLabelOf(key: string, step: BuildStep, rank: number): string {
+    return PHASE_LABELS[key] ?? `${sectionOf(step)?.label ?? "Étapes"} · Phase ${rank}`;
+}
+
 /** Etape sur laquelle le backend s'est arrete, s'il y en a une. */
 function pendingStepOf(result: ProcessBuildResult): BuildStep | null {
     if (result.Status === "Draft") return result.question;
@@ -144,22 +170,26 @@ function StepCard({
     step,
     position,
     isCurrent,
+    isActive,
     chosenLabel,
     children,
 }: {
     step: BuildStep;
     position: number;
+    /** Le build attend une action sur cette etape. */
     isCurrent: boolean;
+    /** Le defilement est pose sur cette etape (grosse bille). */
+    isActive: boolean;
     chosenLabel?: string;
     children?: ReactNode;
 }) {
-    const [expanded, setExpanded] = useState(isCurrent);
+    const [expanded, setExpanded] = useState(isActive);
 
-    // L'etape courante s'ouvre d'elle-meme; elle se replie une fois franchie
-    // pour garder la chronologie lisible (le choix retenu, lui, reste visible).
+    // L'etape sur laquelle on est posé s'ouvre et prend toute la place; les
+    // autres se replient en arriere-plan (le choix retenu, lui, reste visible).
     useEffect(() => {
-        setExpanded(isCurrent);
-    }, [isCurrent]);
+        setExpanded(isActive);
+    }, [isActive]);
 
     const hasDetails = Boolean(
         step.description || step.definitionOfDone || step.informationSource || step.originalSource ||
@@ -167,7 +197,11 @@ function StepCard({
     );
 
     return (
-        <article className={`processusStep${isCurrent ? " processusStep--current" : ""}`}>
+        <article
+            className={`processusStep${isCurrent ? " processusStep--current" : ""}${
+                isActive ? " processusStep--active" : ""
+            }`}
+        >
             <div className="processusStepMarker" aria-hidden="true">
                 <span className="processusStepDot" />
             </div>
@@ -452,7 +486,11 @@ function ProcessusPage() {
 
     /** Evite de redemander une etape deja resolue via GET /steps/{code}. */
     const stepCache = useRef(new Map<string, BuildStep>());
-    const currentRef = useRef<HTMLDivElement>(null);
+    /** Etapes montees, par position : sert au defilement et a l'observation. */
+    const stepRefs = useRef(new Map<number, HTMLElement>());
+    const stepsScrollRef = useRef<HTMLDivElement>(null);
+    /** Etape sur laquelle le defilement est actuellement pose. */
+    const [activePosition, setActivePosition] = useState(1);
     /** Criteres deja lances : garde-fou contre le double effet de StrictMode. */
     const autoStartedFor = useRef("");
 
@@ -528,6 +566,7 @@ function ProcessusPage() {
             setError("");
             stepCache.current.clear();
             setTimeline([]);
+            setActivePosition(1);
             setChoices({});
             setResult(null);
             setPortrait(criteria);
@@ -629,6 +668,7 @@ function ProcessusPage() {
         setError("");
         stepCache.current.clear();
         setTimeline([]);
+        setActivePosition(1);
         setChoices({});
         setResult(null);
         setMode("review");
@@ -649,10 +689,33 @@ function ProcessusPage() {
         }
     };
 
-    // On defile jusqu'a l'etape en attente des qu'une nouvelle apparait.
+    /**
+     * L'etape "active" est celle qui traverse la bande centrale du defilement.
+     * Elle pilote la grosse bille de gauche et la position dans la barre de phases.
+     */
     useEffect(() => {
-        currentRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
-    }, [timeline.length, result]);
+        if (timeline.length === 0) return;
+
+        const observer = new IntersectionObserver(
+            (entries) => {
+                const crossing = entries.filter((entry) => entry.isIntersecting);
+                if (crossing.length === 0) return;
+
+                const nearest = crossing.reduce((best, entry) =>
+                    entry.intersectionRatio >= best.intersectionRatio ? entry : best);
+                const position = Number((nearest.target as HTMLElement).dataset.position);
+
+                if (Number.isFinite(position)) setActivePosition(position);
+            },
+            // Bande etroite au centre de la fenetre : une seule etape est active.
+            // On observe la fenetre (et non la colonne) pour que la barre de
+            // phases suive aussi en mise en page etroite, ou la page defile.
+            { rootMargin: "-45% 0px -45% 0px", threshold: 0 },
+        );
+
+        stepRefs.current.forEach((element) => observer.observe(element));
+        return () => observer.disconnect();
+    }, [timeline]);
 
     const isCreated = result?.Status === "Created";
 
@@ -691,21 +754,44 @@ function ProcessusPage() {
     }, [timeline]);
 
     /** Chronologie regroupee par section (A → E) pour rester lisible. */
-    const groups = useMemo(() => {
-        const grouped: { key: string; label: string; steps: { step: BuildStep; position: number }[] }[] = [];
+    /** Chronologie decoupee en phases : une phase = un groupe de la barre horizontale. */
+    const phases = useMemo(() => {
+        const grouped: {
+            key: string;
+            label: string;
+            steps: { step: BuildStep; position: number }[];
+        }[] = [];
 
         timeline.forEach((step, index) => {
-            const section = sectionOf(step);
-            const key = section ? section.letter : "?";
-            const label = section ? `${section.letter} · ${section.label}` : "Autres étapes";
+            const key = phaseKeyOf(step);
             const last = grouped[grouped.length - 1];
 
             if (last && last.key === key) last.steps.push({ step, position: index + 1 });
-            else grouped.push({ key, label, steps: [{ step, position: index + 1 }] });
+            else grouped.push({
+                key,
+                label: phaseLabelOf(key, step, grouped.length + 1),
+                steps: [{ step, position: index + 1 }],
+            });
         });
 
         return grouped;
     }, [timeline]);
+
+    const activePhaseIndex = useMemo(() => {
+        const index = phases.findIndex((phase) => phase.steps.some((entry) => entry.position === activePosition));
+        return index < 0 ? 0 : index;
+    }, [phases, activePosition]);
+
+    // On defile jusqu'a l'etape en attente des qu'une nouvelle apparait.
+    useEffect(() => {
+        if (currentPosition < 1) return;
+        stepRefs.current.get(currentPosition)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, [currentPosition, timeline.length]);
+
+    const goToPhase = (index: number) => {
+        const first = phases[index]?.steps[0];
+        if (first) stepRefs.current.get(first.position)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    };
 
     const statusLabel = !result
         ? mode === "review"
@@ -871,18 +957,65 @@ function ProcessusPage() {
                     </div>
                 )}
 
-                <div className="processusTimeline">
-                    {groups.map((group) => (
-                        <section key={`${group.key}-${group.steps[0].position}`} className="processusGroup">
-                            <h2 className="processusGroupTitle">{group.label}</h2>
+                {phases.length > 0 && (
+                    <nav className="processusPhaseRail" aria-label="Phases du processus">
+                        <div className="processusPhaseHead">
+                            <span className="processusPhaseCounter">
+                                Phase {activePhaseIndex + 1} / {phases.length}
+                            </span>
+                            <span className="processusPhaseName">{phases[activePhaseIndex]?.label}</span>
+                        </div>
 
-                            {group.steps.map(({ step, position }) => {
-                                const isCurrent = position === currentPosition;
-                                const card = (
+                        <ol className="processusPhaseTrack">
+                            {phases.map((phase, index) => (
+                                <li key={phase.key} className="processusPhaseNode">
+                                    <button
+                                        type="button"
+                                        className={`processusPhaseBall${
+                                            index < activePhaseIndex
+                                                ? " processusPhaseBall--done"
+                                                : index === activePhaseIndex
+                                                  ? " processusPhaseBall--active"
+                                                  : ""
+                                        }`}
+                                        onClick={() => goToPhase(index)}
+                                        aria-current={index === activePhaseIndex ? "step" : undefined}
+                                        aria-label={`${phase.key} — ${phase.label}`}
+                                        title={phase.label}
+                                    >
+                                        <span className="processusPhaseDotWrap">
+                                            <span className="processusPhaseDot" />
+                                        </span>
+                                        <span className="processusPhaseKey">{phase.key}</span>
+                                    </button>
+                                </li>
+                            ))}
+                        </ol>
+                    </nav>
+                )}
+
+                <div className="processusSteps" ref={stepsScrollRef}>
+                    {/* Le filet vertical continu appartient a la piste, pas aux cartes. */}
+                    <div className="processusTrack">
+                    {phases.map((phase) =>
+                        phase.steps.map(({ step, position }) => {
+                            const isCurrent = position === currentPosition;
+
+                            return (
+                                <div
+                                    key={`${step.code}-${position}`}
+                                    className="processusStepSnap"
+                                    data-position={position}
+                                    ref={(element) => {
+                                        if (element) stepRefs.current.set(position, element);
+                                        else stepRefs.current.delete(position);
+                                    }}
+                                >
                                     <StepCard
                                         step={step}
                                         position={position}
                                         isCurrent={isCurrent}
+                                        isActive={position === activePosition}
                                         chosenLabel={choices[step.code]}
                                     >
                                         {isCurrent && result?.Status === "Draft" && (
@@ -900,21 +1033,17 @@ function ProcessusPage() {
                                             />
                                         )}
                                     </StepCard>
-                                );
 
-                                return (
-                                    <div key={`${step.code}-${position}`} ref={isCurrent ? currentRef : undefined}>
-                                        {card}
-                                        {step.endPhase && (
-                                            <p className="processusBoundary">
-                                                {step.endSection ? "Fin de section" : "Fin de phase"}
-                                            </p>
-                                        )}
-                                    </div>
-                                );
-                            })}
-                        </section>
-                    ))}
+                                    {step.endPhase && (
+                                        <p className="processusBoundary">
+                                            {step.endSection ? "Fin de section" : "Fin de phase"}
+                                        </p>
+                                    )}
+                                </div>
+                            );
+                        }),
+                    )}
+                    </div>
 
                     {isCreated && result.Status === "Created" && (
                         <section className="processusDone">

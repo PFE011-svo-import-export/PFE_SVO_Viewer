@@ -309,12 +309,15 @@
 
 /* --- Scene principale ----------------------------------------------------- */
 
+/* En-tete + barre de phases fixes, seule la colonne d'etapes defile. */
 .processusStage {
     flex: 1 1 auto;
     min-width: 0;
     height: 100%;
-    overflow-y: auto;
-    padding: 24px 40px 80px;
+    overflow: hidden;
+    padding: 24px 40px 0;
+    display: flex;
+    flex-direction: column;
 }
 
 .processusStageHead {
@@ -404,25 +407,165 @@
     margin-top: 18px;
 }
 
-/* --- Chronologie ---------------------------------------------------------- */
+/* --- Barre horizontale des phases ----------------------------------------- */
 
-.processusTimeline {
-    margin-top: 24px;
+.processusPhaseRail {
+    flex: 0 0 auto;
+    padding: 18px 0 14px;
+    border-bottom: 1px solid var(--line);
 }
 
-.processusGroup {
-    margin-bottom: 26px;
+.processusPhaseHead {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    margin-bottom: 16px;
+    min-height: 26px;
 }
 
-.processusGroupTitle {
+.processusPhaseCounter {
     font-family: "Bitcount Single", sans-serif;
-    font-size: 12px;
-    letter-spacing: 2px;
+    font-size: 11px;
+    letter-spacing: 1.5px;
     text-transform: uppercase;
     color: var(--muted);
-    margin: 0 0 12px;
-    padding-bottom: 6px;
-    border-bottom: 1px solid var(--line);
+    white-space: nowrap;
+}
+
+.processusPhaseName {
+    font-size: 20px;
+    font-weight: 600;
+    line-height: 1.2;
+}
+
+.processusPhaseTrack {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    align-items: flex-start;
+    position: relative;
+}
+
+/* Le filet passe par le centre de la zone des billes (26px de haut). */
+.processusPhaseTrack::before {
+    content: "";
+    position: absolute;
+    top: 13px;
+    left: 5%;
+    right: 5%;
+    height: 1px;
+    background: var(--line-strong);
+}
+
+.processusPhaseNode {
+    flex: 1 1 0;
+    display: flex;
+    justify-content: center;
+    position: relative;
+    z-index: 1;
+    min-width: 0;
+}
+
+.processusPhaseBall {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 0;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: inherit;
+}
+
+.processusPhaseDotWrap {
+    height: 26px;
+    display: flex;
+    align-items: center;
+}
+
+.processusPhaseDot {
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+    background: #DDBFA3;
+    border: 1px solid var(--line-strong);
+    transition: width 0.32s ease, height 0.32s ease, background 0.32s, border-color 0.32s, box-shadow 0.32s;
+}
+
+.processusPhaseBall:hover .processusPhaseDot {
+    border-color: var(--brown);
+}
+
+.processusPhaseBall--done .processusPhaseDot {
+    background: var(--brown);
+    border-color: var(--brown);
+}
+
+.processusPhaseBall--active .processusPhaseDot {
+    width: 22px;
+    height: 22px;
+    background: var(--accent);
+    border-color: var(--accent);
+    box-shadow: 0 0 0 5px rgba(26, 111, 143, 0.18);
+}
+
+.processusPhaseKey {
+    font-family: "Bitcount Single", sans-serif;
+    font-size: 10px;
+    letter-spacing: 0.5px;
+    color: var(--muted);
+    white-space: nowrap;
+    transition: color 0.32s;
+}
+
+.processusPhaseBall--active .processusPhaseKey {
+    color: var(--accent);
+    font-weight: 600;
+}
+
+.processusPhaseBall--done .processusPhaseKey {
+    color: var(--ink);
+}
+
+/* --- Chronologie : une etape a la fois ------------------------------------ */
+
+.processusSteps {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    /* De quoi amener la premiere et la derniere etape au centre du cadre. */
+    padding: 34vh 0;
+    scroll-snap-type: y mandatory;
+}
+
+/* Piste : porte le filet vertical continu qui relie toutes les billes. */
+.processusTrack {
+    position: relative;
+}
+
+/* Centre exact de la colonne des billes (24px de large). */
+.processusTrack::before {
+    content: "";
+    position: absolute;
+    left: 12px;
+    transform: translateX(-50%);
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background: var(--line-strong);
+}
+
+/*
+ * Carrousel : l'etape posee au centre est pleine taille, les autres reculent.
+ * scroll-snap-stop interdit d'en sauter une au passage.
+ */
+.processusStepSnap {
+    scroll-snap-align: center;
+    scroll-snap-stop: always;
+    position: relative;
+    margin-bottom: 20px;
 }
 
 .processusStep {
@@ -437,43 +580,69 @@
 }
 
 /* Filet vertical + pastille : la ligne du temps. */
+/* Le filet est porte par .processusTrack : la colonne ne garde que la bille. */
 .processusStepMarker {
-    flex: 0 0 12px;
+    flex: 0 0 24px;
     display: flex;
     justify-content: center;
     position: relative;
 }
 
-.processusStepMarker::before {
-    content: "";
-    position: absolute;
-    top: 0;
-    bottom: -14px;
-    width: 1px;
-    background: var(--line-strong);
-}
-
+/* Meme principe que la barre de phases : la bille grossit sur l'etape posee. */
 .processusStepDot {
     position: relative;
-    margin-top: 16px;
-    width: 9px;
-    height: 9px;
+    margin-top: 14px;
+    width: 10px;
+    height: 10px;
     border-radius: 50%;
-    background: var(--brown);
+    background: #DDBFA3;
+    border: 1px solid var(--line-strong);
+    transition: width 0.32s ease, height 0.32s ease, margin-top 0.32s ease, background 0.32s, border-color 0.32s, box-shadow 0.32s;
+}
+
+.processusStep--active .processusStepDot {
+    width: 20px;
+    height: 20px;
+    margin-top: 9px;
+    background: var(--accent);
+    border-color: var(--accent);
+    box-shadow: 0 0 0 5px rgba(26, 111, 143, 0.18);
 }
 
 .processusStep--current .processusStepDot {
     background: var(--accent);
-    box-shadow: 0 0 0 4px rgba(26, 111, 143, 0.22);
+    border-color: var(--accent);
 }
 
+/* L'etape franchie garde une bille pleine, plus discrete. */
+.processusStep:not(.processusStep--active):not(.processusStep--current) .processusStepDot {
+    background: var(--brown);
+    border-color: var(--brown);
+}
+
+/*
+ * Les cartes non posees reculent : plus petites, estompees et non cliquables.
+ * L'echelle porte sur la carte seule (pas sur la ligne) pour que les billes
+ * restent alignees sur le filet.
+ */
 .processusStepBody {
     flex: 1 1 auto;
     min-width: 0;
-    margin-bottom: 14px;
     background: var(--panel);
     border: 1px solid var(--line);
-    transition: border-color 0.25s, background 0.25s;
+    transform: scale(0.94);
+    transform-origin: left center;
+    opacity: 0.32;
+    transition: transform 0.35s ease, opacity 0.35s ease, border-color 0.3s, background 0.3s;
+}
+
+.processusStep--active .processusStepBody {
+    transform: none;
+    opacity: 1;
+}
+
+.processusStep:not(.processusStep--active) .processusStepBody {
+    pointer-events: none;
 }
 
 .processusStep--current .processusStepBody {
@@ -693,7 +862,8 @@
 }
 
 .processusBoundary {
-    margin: 0 0 16px 28px;
+    margin: 10px 0 0 40px;
+    opacity: 0.55;
     font-family: "Bitcount Single", sans-serif;
     font-size: 10px;
     letter-spacing: 2px;
@@ -892,6 +1062,26 @@
         height: auto;
         overflow: visible;
         padding: 20px 20px 60px;
+    }
+
+    /* Sur petit ecran la page entiere defile : ni calage, ni mise en retrait. */
+    .processusSteps {
+        overflow: visible;
+        scroll-snap-type: none;
+        padding: 0;
+    }
+
+    .processusStepBody {
+        transform: none;
+        opacity: 1;
+    }
+
+    .processusStep:not(.processusStep--active) .processusStepBody {
+        pointer-events: auto;
+    }
+
+    .processusPhaseKey {
+        display: none;
     }
 
     .processusDecision,
