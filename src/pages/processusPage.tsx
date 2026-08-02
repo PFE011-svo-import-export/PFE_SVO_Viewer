@@ -1,4 +1,14 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import {
+    useCallback,
+    useEffect,
+    useLayoutEffect,
+    useMemo,
+    useRef,
+    useState,
+    type CSSProperties,
+    type KeyboardEvent as ReactKeyboardEvent,
+    type ReactNode,
+} from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import {
     getIncoterms,
@@ -51,6 +61,34 @@ const SECTIONS = [
     { letter: "D", label: "Importation" },
     { letter: "E", label: "Mise en marché" },
 ] as const;
+
+/* ------------------------------------------------------------------ *
+ *  Carrousel 3D
+ *
+ *  Les etapes ne se suivent plus dans le flux : elles sont empilees sur un
+ *  meme plan, au centre du cadre. Le defilement ne deplace donc rien
+ *  directement — il fait avancer un curseur continu (`progress`) dont on
+ *  deduit, pour chaque carte, son ecart au centre. Celle qui est posee est
+ *  pleine taille; celle d'avant et celle d'apres reculent (translateZ),
+ *  basculent (rotateX) et s'estompent; au-dela, plus rien n'est peint.
+ * ------------------------------------------------------------------ */
+
+/** Course de defilement (px) pour passer d'une etape a la suivante. */
+const DECK_SLOT = 160;
+/** Doit rester aligne sur --deck-perspective (CSS) : sert a projeter le rail. */
+const DECK_PERSPECTIVE = 1400;
+/** Recul (px) et basculement (deg) appliques par cran d'ecart. */
+const DECK_DEPTH = 520;
+const DECK_TILT = 13;
+/** Ce qui doit depasser de la carte voisine, au-dela du bord de la carte posee. */
+const DECK_PEEK = 56;
+const DECK_MIN_GAP = 150;
+/** Ecart maximum entre deux cartes, en fraction de la hauteur visible. */
+const DECK_MAX_GAP_RATIO = 0.46;
+/** Au-dela de cet ecart, la carte sort de la scene. */
+const DECK_RANGE = 1.85;
+/** En dessous, la page entiere defile : on retombe sur une liste classique. */
+const DECK_QUERY = "(min-width: 1025px)";
 
 const STEP_TYPE_LABEL: Record<BuildStep["Type"], string> = {
     Standard: "Étape",
@@ -486,13 +524,215 @@ function ProcessusPage() {
 
     /** Evite de redemander une etape deja resolue via GET /steps/{code}. */
     const stepCache = useRef(new Map<string, BuildStep>());
-    /** Etapes montees, par position : sert au defilement et a l'observation. */
-    const stepRefs = useRef(new Map<number, HTMLElement>());
-    const stepsScrollRef = useRef<HTMLDivElement>(null);
     /** Etape sur laquelle le defilement est actuellement pose. */
     const [activePosition, setActivePosition] = useState(1);
     /** Criteres deja lances : garde-fou contre le double effet de StrictMode. */
     const autoStartedFor = useRef("");
+
+    /* --- Carrousel 3D ----------------------------------------------------- */
+
+    const deckScrollRef = useRef<HTMLDivElement>(null);
+    /** Cartes montees, par position (1-based). */
+    const cardRefs = useRef(new Map<number, HTMLElement>());
+    /** Billes du rail, par position : elles suivent les cartes sans reculer. */
+    const dotRefs = useRef(new Map<number, HTMLElement>());
+    const deckFrame = useRef(0);
+    /** Hauteur visible du cadre : fixe la course, le calage et l'ecart. */
+    const [deckHeight, setDeckHeight] = useState(0);
+    const [deckEnabled, setDeckEnabled] = useState(
+        () => typeof window !== "undefined" && window.matchMedia(DECK_QUERY).matches,
+    );
+
+    const registerCard = (position: number) => (element: HTMLDivElement | null) => {
+        if (element) cardRefs.current.set(position, element);
+        else cardRefs.current.delete(position);
+    };
+
+    const registerDot = (position: number) => (element: HTMLSpanElement | null) => {
+        if (element) dotRefs.current.set(position, element);
+        else dotRefs.current.delete(position);
+    };
+
+    /**
+     * Pose chaque carte selon son ecart au centre. Applique en direct sur le
+     * DOM : le rendu React ne suit pas le defilement image par image.
+     */
+    const applyDeck = useCallback(() => {
+        const scroller = deckScrollRef.current;
+        if (!scroller) return;
+
+        const progress = scroller.scrollTop / DECK_SLOT;
+
+        // L'ecart se mesure a l'ecran, sur la carte posee : elle seule est
+        // deployee, donc elle seule dicte ou les voisines doivent depasser.
+        const centered = cardRefs.current.get(Math.round(progress) + 1);
+        const gap = Math.min(
+            Math.max(DECK_MIN_GAP, scroller.clientHeight * DECK_MAX_GAP_RATIO),
+            Math.max(DECK_MIN_GAP, (centered?.offsetHeight ?? 0) / 2 + DECK_PEEK),
+        );
+
+        cardRefs.current.forEach((card, position) => {
+            const offset = position - 1 - progress;
+            const distance = Math.abs(offset);
+            const dot = dotRefs.current.get(position);
+
+            if (distance > DECK_RANGE) {
+                card.style.visibility = "hidden";
+                card.style.opacity = "0";
+                if (dot) dot.style.opacity = "0";
+                return;
+            }
+
+            const depth = distance * DECK_DEPTH;
+            // La perspective resserre vers le centre ce qui recule : on divise
+            // par ce facteur pour que l'ecart demande soit celui qu'on voit.
+            const shrink = DECK_PERSPECTIVE / (DECK_PERSPECTIVE + depth);
+            const screenY = offset * gap;
+            const opacity =
+                distance <= 1
+                    ? 1 - 0.66 * distance
+                    : Math.max(0, 0.34 * (1 - (distance - 1) / (DECK_RANGE - 1)));
+
+            card.style.visibility = "visible";
+            card.style.opacity = opacity.toFixed(3);
+            card.style.zIndex = String(Math.max(0, Math.round(100 - distance * 20)));
+            card.style.pointerEvents = distance < 0.5 ? "auto" : "none";
+            card.style.filter = distance > 0.35 ? `blur(${((distance - 0.35) * 2.2).toFixed(2)}px)` : "none";
+            card.style.transform =
+                `translateY(calc(-50% + ${(screenY / shrink).toFixed(1)}px))` +
+                ` translateZ(${(-depth).toFixed(1)}px)` +
+                ` rotateX(${(-offset * DECK_TILT).toFixed(2)}deg)`;
+
+            // Le rail reste a plat devant la scene : il suit l'ecart vu, pas celui
+            // applique a la carte, et ne se resserre que pour la mise a l'echelle.
+            if (dot) {
+                dot.style.opacity = Math.max(0.18, opacity).toFixed(3);
+                dot.style.transform =
+                    `translate(-50%, calc(-50% + ${screenY.toFixed(1)}px)) scale(${shrink.toFixed(3)})`;
+            }
+        });
+    }, []);
+
+    /** Le defilement ne redessine qu'a l'image suivante. */
+    const handleDeckScroll = useCallback(() => {
+        if (deckFrame.current !== 0) return;
+
+        deckFrame.current = requestAnimationFrame(() => {
+            deckFrame.current = 0;
+            applyDeck();
+
+            const scroller = deckScrollRef.current;
+            if (!scroller) return;
+
+            const slots = Math.max(1, cardRefs.current.size);
+            const settled = Math.min(slots, Math.max(1, Math.round(scroller.scrollTop / DECK_SLOT) + 1));
+            setActivePosition((current) => (current === settled ? current : settled));
+        });
+    }, [applyDeck]);
+
+    /** Amene une etape au centre : le calage se fait sur la course, pas sur le DOM. */
+    const goToPosition = useCallback(
+        (position: number, behavior: ScrollBehavior = "smooth") => {
+            const scroller = deckScrollRef.current;
+            if (!scroller) return;
+
+            if (!deckEnabled) {
+                cardRefs.current.get(position)?.scrollIntoView({ behavior, block: "center" });
+                return;
+            }
+
+            scroller.scrollTo({ top: (position - 1) * DECK_SLOT, behavior });
+        },
+        [deckEnabled],
+    );
+
+    /**
+     * Le calage rend les fleches inoperantes (un cran de clavier ne suffit pas
+     * a franchir un cran de course) : on deplace donc le carrousel a la main.
+     * Les champs de saisie gardent leurs fleches.
+     */
+    const handleDeckKeys = (event: ReactKeyboardEvent<HTMLDivElement>) => {
+        if (!deckEnabled || slotCount === 0) return;
+        if ((event.target as HTMLElement).closest("input, textarea, select")) return;
+
+        const move = (target: number) => {
+            event.preventDefault();
+            goToPosition(Math.min(slotCount, Math.max(1, target)));
+        };
+
+        switch (event.key) {
+            case "ArrowDown":
+            case "PageDown":
+                return move(activePosition + 1);
+            case "ArrowUp":
+            case "PageUp":
+                return move(activePosition - 1);
+            case "Home":
+                return move(1);
+            case "End":
+                return move(slotCount);
+        }
+    };
+
+    useEffect(() => {
+        const media = window.matchMedia(DECK_QUERY);
+        const update = () => setDeckEnabled(media.matches);
+
+        media.addEventListener("change", update);
+        return () => media.removeEventListener("change", update);
+    }, []);
+
+    // La hauteur visible pilote la course, le calage du plan et l'ecart entre
+    // les cartes : elle doit etre connue avant la premiere peinture.
+    useLayoutEffect(() => {
+        const scroller = deckScrollRef.current;
+        if (!scroller || !deckEnabled) return;
+
+        const observer = new ResizeObserver(() => setDeckHeight(scroller.clientHeight));
+        observer.observe(scroller);
+        setDeckHeight(scroller.clientHeight);
+
+        return () => observer.disconnect();
+    }, [deckEnabled]);
+
+    // Toute nouvelle carte doit etre posee avant d'etre peinte, sinon elle
+    // apparait empilee au centre le temps d'une image.
+    useLayoutEffect(() => {
+        if (!deckEnabled) {
+            cardRefs.current.forEach((card) => card.removeAttribute("style"));
+            dotRefs.current.forEach((dot) => dot.removeAttribute("style"));
+            return;
+        }
+
+        applyDeck();
+    });
+
+    useEffect(() => () => cancelAnimationFrame(deckFrame.current), []);
+
+    /**
+     * Mise en page etroite : la page entiere defile, il n'y a plus de course a
+     * lire. L'etape "active" redevient celle qui traverse la bande centrale.
+     */
+    useEffect(() => {
+        if (deckEnabled || timeline.length === 0) return;
+
+        const observer = new IntersectionObserver(
+            (entries) => {
+                const crossing = entries.filter((entry) => entry.isIntersecting);
+                if (crossing.length === 0) return;
+
+                const nearest = crossing.reduce((best, entry) =>
+                    entry.intersectionRatio >= best.intersectionRatio ? entry : best);
+                const position = Number((nearest.target as HTMLElement).dataset.position);
+
+                if (Number.isFinite(position)) setActivePosition(position);
+            },
+            { rootMargin: "-45% 0px -45% 0px", threshold: 0 },
+        );
+
+        cardRefs.current.forEach((card) => observer.observe(card));
+        return () => observer.disconnect();
+    }, [deckEnabled, timeline]);
 
     const [searchParams] = useSearchParams();
 
@@ -689,35 +929,10 @@ function ProcessusPage() {
         }
     };
 
-    /**
-     * L'etape "active" est celle qui traverse la bande centrale du defilement.
-     * Elle pilote la grosse bille de gauche et la position dans la barre de phases.
-     */
-    useEffect(() => {
-        if (timeline.length === 0) return;
-
-        const observer = new IntersectionObserver(
-            (entries) => {
-                const crossing = entries.filter((entry) => entry.isIntersecting);
-                if (crossing.length === 0) return;
-
-                const nearest = crossing.reduce((best, entry) =>
-                    entry.intersectionRatio >= best.intersectionRatio ? entry : best);
-                const position = Number((nearest.target as HTMLElement).dataset.position);
-
-                if (Number.isFinite(position)) setActivePosition(position);
-            },
-            // Bande etroite au centre de la fenetre : une seule etape est active.
-            // On observe la fenetre (et non la colonne) pour que la barre de
-            // phases suive aussi en mise en page etroite, ou la page defile.
-            { rootMargin: "-45% 0px -45% 0px", threshold: 0 },
-        );
-
-        stepRefs.current.forEach((element) => observer.observe(element));
-        return () => observer.disconnect();
-    }, [timeline]);
-
     const isCreated = result?.Status === "Created";
+    /** Le bilan de fin occupe un cran de plus que la derniere etape. */
+    const doneResult = result?.Status === "Created" ? result : null;
+    const slotCount = timeline.length + (doneResult ? 1 : 0);
 
     /**
      * Position (1-based) de l'etape en attente. On prend la derniere occurrence :
@@ -779,18 +994,27 @@ function ProcessusPage() {
 
     const activePhaseIndex = useMemo(() => {
         const index = phases.findIndex((phase) => phase.steps.some((entry) => entry.position === activePosition));
-        return index < 0 ? 0 : index;
-    }, [phases, activePosition]);
+        if (index >= 0) return index;
 
-    // On defile jusqu'a l'etape en attente des qu'une nouvelle apparait.
+        // La carte de fin, posee apres la derniere etape, appartient a la
+        // derniere phase; tout le reste retombe sur la premiere.
+        return activePosition > timeline.length ? Math.max(phases.length - 1, 0) : 0;
+    }, [phases, activePosition, timeline.length]);
+
+    // On defile jusqu'a l'etape en attente des qu'une nouvelle apparait, et on
+    // revient au depart quand la chronologie est remise a zero.
     useEffect(() => {
-        if (currentPosition < 1) return;
-        stepRefs.current.get(currentPosition)?.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, [currentPosition, timeline.length]);
+        if (timeline.length === 0) {
+            goToPosition(1, "auto");
+            return;
+        }
+
+        if (currentPosition >= 1) goToPosition(currentPosition);
+    }, [currentPosition, timeline.length, goToPosition]);
 
     const goToPhase = (index: number) => {
         const first = phases[index]?.steps[0];
-        if (first) stepRefs.current.get(first.position)?.scrollIntoView({ behavior: "smooth", block: "start" });
+        if (first) goToPosition(first.position);
     };
 
     const statusLabel = !result
@@ -994,68 +1218,143 @@ function ProcessusPage() {
                     </nav>
                 )}
 
-                <div className="processusSteps" ref={stepsScrollRef}>
-                    {/* Le filet vertical continu appartient a la piste, pas aux cartes. */}
-                    <div className="processusTrack">
-                    {phases.map((phase) =>
-                        phase.steps.map(({ step, position }) => {
-                            const isCurrent = position === currentPosition;
+                <div
+                    className={`processusSteps${deckEnabled ? " processusSteps--deck" : ""}`}
+                    ref={deckScrollRef}
+                    onScroll={deckEnabled ? handleDeckScroll : undefined}
+                    onKeyDown={deckEnabled ? handleDeckKeys : undefined}
+                    tabIndex={deckEnabled && slotCount > 0 ? 0 : undefined}
+                    aria-label={deckEnabled && slotCount > 0 ? "Chronologie des étapes" : undefined}
+                >
+                    {/*
+                     * Bloc de course : sa hauteur seule donne au cadre de quoi
+                     * defiler (une longueur de cran par etape). Rien n'y est
+                     * visible — les cartes vivent sur le plan fixe, en dessous.
+                     */}
+                    <div
+                        className="processusDeck"
+                        style={
+                            deckEnabled
+                                ? { height: `${deckHeight + Math.max(0, slotCount - 1) * DECK_SLOT}px` }
+                                : undefined
+                        }
+                    >
+                        {deckEnabled &&
+                            Array.from({ length: slotCount }, (_, index) => (
+                                <span
+                                    key={`snap-${index}`}
+                                    className="processusDeckSnap"
+                                    style={{ top: `${index * DECK_SLOT}px` }}
+                                />
+                            ))}
 
-                            return (
-                                <div
-                                    key={`${step.code}-${position}`}
-                                    className="processusStepSnap"
-                                    data-position={position}
-                                    ref={(element) => {
-                                        if (element) stepRefs.current.set(position, element);
-                                        else stepRefs.current.delete(position);
-                                    }}
-                                >
-                                    <StepCard
-                                        step={step}
-                                        position={position}
-                                        isCurrent={isCurrent}
-                                        isActive={position === activePosition}
-                                        chosenLabel={choices[step.code]}
-                                    >
-                                        {isCurrent && result?.Status === "Draft" && (
-                                            <DecisionPanel
-                                                question={result.question}
-                                                busy={busy === "answer"}
-                                                onChoose={(option) => handleChoose(result.question, option)}
-                                            />
-                                        )}
-                                        {isCurrent && result?.Status === "WaitingForSend" && (
-                                            <SendPanel
-                                                step={result.sendStep}
-                                                busy={busy === "send"}
-                                                onSend={(payload) => handleSend(result.sendStep, payload)}
-                                            />
-                                        )}
-                                    </StepCard>
+                        <div
+                            className="processusDeckViewport"
+                            style={
+                                deckEnabled
+                                    ? ({
+                                          top: `${deckHeight / 2}px`,
+                                          "--deck-height": `${deckHeight}px`,
+                                          // Une etape ne prend jamais tout le
+                                          // cadre : ses voisines doivent depasser.
+                                          "--deck-card-max": `${Math.max(240, Math.round(deckHeight * 0.72))}px`,
+                                      } as CSSProperties)
+                                    : undefined
+                            }
+                        >
+                            {deckEnabled && (
+                                <div className="processusDeckRail" aria-hidden="true">
+                                    <span className="processusDeckRailLine" />
+                                    {Array.from({ length: slotCount }, (_, index) => {
+                                        const position = index + 1;
 
-                                    {step.endPhase && (
-                                        <p className="processusBoundary">
-                                            {step.endSection ? "Fin de section" : "Fin de phase"}
-                                        </p>
-                                    )}
+                                        return (
+                                            <span
+                                                key={`dot-${position}`}
+                                                ref={registerDot(position)}
+                                                className={`processusDeckDot${
+                                                    position === activePosition
+                                                        ? " processusDeckDot--active"
+                                                        : position === currentPosition
+                                                          ? " processusDeckDot--current"
+                                                          : position < activePosition
+                                                            ? " processusDeckDot--done"
+                                                            : ""
+                                                }`}
+                                            />
+                                        );
+                                    })}
                                 </div>
-                            );
-                        }),
-                    )}
-                    </div>
+                            )}
 
-                    {isCreated && result.Status === "Created" && (
-                        <section className="processusDone">
-                            <h2 className="processusDoneTitle">Processus complet</h2>
-                            <p className="processusDoneText">
-                                {timeline.length} étapes assemblées pour {result.process.code}.
-                            </p>
-                            <p className="processusDoneText">
-                                Coût total estimé : {formatPrice(result.process.price ?? stats.price)}
-                            </p>
-                        </section>
-                    )}
+                            {phases.map((phase) =>
+                                phase.steps.map(({ step, position }) => {
+                                    const isCurrent = position === currentPosition;
+
+                                    return (
+                                        <div
+                                            key={`${step.code}-${position}`}
+                                            className={`processusDeckCard${
+                                                position === activePosition ? " processusDeckCard--active" : ""
+                                            }`}
+                                            data-position={position}
+                                            ref={registerCard(position)}
+                                        >
+                                            <StepCard
+                                                step={step}
+                                                position={position}
+                                                isCurrent={isCurrent}
+                                                isActive={position === activePosition}
+                                                chosenLabel={choices[step.code]}
+                                            >
+                                                {isCurrent && result?.Status === "Draft" && (
+                                                    <DecisionPanel
+                                                        question={result.question}
+                                                        busy={busy === "answer"}
+                                                        onChoose={(option) => handleChoose(result.question, option)}
+                                                    />
+                                                )}
+                                                {isCurrent && result?.Status === "WaitingForSend" && (
+                                                    <SendPanel
+                                                        step={result.sendStep}
+                                                        busy={busy === "send"}
+                                                        onSend={(payload) => handleSend(result.sendStep, payload)}
+                                                    />
+                                                )}
+                                            </StepCard>
+
+                                            {step.endPhase && (
+                                                <p className="processusBoundary">
+                                                    {step.endSection ? "Fin de section" : "Fin de phase"}
+                                                </p>
+                                            )}
+                                        </div>
+                                    );
+                                }),
+                            )}
+
+                            {/* La fin de processus occupe le dernier cran de la course. */}
+                            {doneResult && (
+                                <div
+                                    className={`processusDeckCard${
+                                        slotCount === activePosition ? " processusDeckCard--active" : ""
+                                    }`}
+                                    data-position={slotCount}
+                                    ref={registerCard(slotCount)}
+                                >
+                                    <section className="processusDone">
+                                        <h2 className="processusDoneTitle">Processus complet</h2>
+                                        <p className="processusDoneText">
+                                            {timeline.length} étapes assemblées pour {doneResult.process.code}.
+                                        </p>
+                                        <p className="processusDoneText">
+                                            Coût total estimé : {formatPrice(doneResult.process.price ?? stats.price)}
+                                        </p>
+                                    </section>
+                                </div>
+                            )}
+                        </div>
+                    </div>
                 </div>
             </main>
         </div>

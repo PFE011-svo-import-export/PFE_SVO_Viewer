@@ -529,43 +529,190 @@
     color: var(--ink);
 }
 
-/* --- Chronologie : une etape a la fois ------------------------------------ */
+/* --- Chronologie : un carrousel 3D, une etape a la fois ------------------- */
 
 .processusSteps {
     flex: 1 1 auto;
     min-height: 0;
     overflow-y: auto;
-    /* De quoi amener la premiere et la derniere etape au centre du cadre. */
-    padding: 34vh 0;
-    scroll-snap-type: y mandatory;
-}
-
-/* Piste : porte le filet vertical continu qui relie toutes les billes. */
-.processusTrack {
-    position: relative;
-}
-
-/* Centre exact de la colonne des billes (24px de large). */
-.processusTrack::before {
-    content: "";
-    position: absolute;
-    left: 12px;
-    transform: translateX(-50%);
-    top: 0;
-    bottom: 0;
-    width: 1px;
-    background: var(--line-strong);
+    overflow-x: hidden;
 }
 
 /*
- * Carrousel : l'etape posee au centre est pleine taille, les autres reculent.
- * scroll-snap-stop interdit d'en sauter une au passage.
+ * Mode carrousel (ecrans larges). Le cadre defile sur une course purement
+ * abstraite : elle ne deplace aucune carte, elle avance un curseur dont le
+ * script deduit la profondeur de chacune. Le calage force l'arret sur un cran.
  */
-.processusStepSnap {
-    scroll-snap-align: center;
+.processusSteps--deck {
+    --deck-perspective: 1400px;
+    scroll-snap-type: y mandatory;
+    overscroll-behavior: contain;
+    scrollbar-width: none;
+}
+
+.processusSteps--deck::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+}
+
+/* Le cadre se prend le focus : les fleches font defiler le carrousel. */
+.processusSteps--deck:focus-visible {
+    outline: 1px solid var(--line-strong);
+    outline-offset: -1px;
+}
+
+/* Bloc de course : hauteur = un cran par etape + la hauteur visible. */
+.processusDeck {
+    position: relative;
+}
+
+/* Crans invisibles sur lesquels le defilement se cale. */
+.processusDeckSnap {
+    position: absolute;
+    left: 0;
+    width: 1px;
+    height: 1px;
+    pointer-events: none;
+    scroll-snap-align: start;
     scroll-snap-stop: always;
+}
+
+/*
+ * Plan fixe, colle au centre du cadre. De hauteur nulle : les cartes s'y
+ * accrochent par leur milieu (translateY(-50%)), donc la carte posee est
+ * toujours centree, quelle que soit sa taille.
+ */
+.processusDeckViewport {
+    position: relative;
+}
+
+.processusSteps--deck .processusDeckViewport {
+    position: sticky;
+    /* top est pose en ligne : la moitie de la hauteur visible, en pixels
+       (un pourcentage se lirait sur le bloc de course, bien plus haut). */
+    height: 0;
+    perspective: var(--deck-perspective);
+    perspective-origin: 50% 0;
+}
+
+/* Rail : le filet vertical et ses billes restent a plat devant la scene. */
+.processusDeckRail {
+    position: absolute;
+    top: 0;
+    left: 12px;
+    width: 0;
+    height: 0;
+    z-index: 120;
+    pointer-events: none;
+}
+
+.processusDeckRailLine {
+    position: absolute;
+    left: 0;
+    top: calc(var(--deck-height, 100vh) / -2);
+    width: 1px;
+    height: var(--deck-height, 100vh);
+    background: var(--line-strong);
+}
+
+.processusDeckDot {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #DDBFA3;
+    border: 1px solid var(--line-strong);
+    transition: width 0.32s ease, height 0.32s ease, background 0.32s, border-color 0.32s, box-shadow 0.32s;
+}
+
+.processusDeckDot--done {
+    background: var(--brown);
+    border-color: var(--brown);
+}
+
+.processusDeckDot--current {
+    background: var(--accent);
+    border-color: var(--accent);
+}
+
+.processusDeckDot--active {
+    width: 20px;
+    height: 20px;
+    background: var(--accent);
+    border-color: var(--accent);
+    box-shadow: 0 0 0 5px rgba(26, 111, 143, 0.18);
+}
+
+/* --- Cartes du carrousel -------------------------------------------------- */
+
+.processusDeckCard {
     position: relative;
     margin-bottom: 20px;
+}
+
+.processusSteps--deck .processusDeckCard {
+    position: absolute;
+    top: 0;
+    left: 40px;
+    right: 12px;
+    max-width: 1120px;
+    margin: 0;
+    transform-origin: 50% 50%;
+    backface-visibility: hidden;
+    /* Etat de depart : le placement 3D est pose par le script, avant peinture. */
+    visibility: hidden;
+    opacity: 0;
+}
+
+/* La bille de gauche est portee par le rail : la carte n'en garde pas. */
+.processusSteps--deck .processusStepMarker {
+    display: none;
+}
+
+.processusSteps--deck .processusStep {
+    gap: 0;
+    animation: none;
+}
+
+/*
+ * La profondeur est portee par la carte entiere : le corps reste a l'echelle.
+ * Une etape trop longue defile chez elle puis rend la main au carrousel — d'ou
+ * l'absence d'overscroll-behavior, qui bloquerait le relais.
+ */
+.processusSteps--deck .processusStepBody {
+    transform: none;
+    opacity: 1;
+    max-height: var(--deck-card-max, 70vh);
+    overflow-y: auto;
+    box-shadow: 0 18px 40px rgba(43, 33, 24, 0.18);
+}
+
+.processusSteps--deck .processusDeckCard--active .processusStepBody {
+    background: var(--panel-solid);
+    box-shadow: 0 30px 70px rgba(43, 33, 24, 0.3);
+}
+
+/* L'etape posee se lit d'un peu plus loin : elle gagne en corps. */
+.processusSteps--deck .processusDeckCard--active .processusStepHead {
+    padding: 16px 18px;
+}
+
+.processusSteps--deck .processusDeckCard--active .processusStepName {
+    font-size: 21px;
+}
+
+.processusSteps--deck .processusDeckCard--active .processusStepDescription {
+    font-size: 14px;
+}
+
+.processusSteps--deck .processusBoundary {
+    margin-left: 0;
+}
+
+.processusSteps--deck .processusDone {
+    margin: 0;
 }
 
 .processusStep {
@@ -580,7 +727,7 @@
 }
 
 /* Filet vertical + pastille : la ligne du temps. */
-/* Le filet est porte par .processusTrack : la colonne ne garde que la bille. */
+/* Le filet est porte par le rail (ou par le plan, en liste) : ici, la bille seule. */
 .processusStepMarker {
     flex: 0 0 24px;
     display: flex;
@@ -1064,11 +1211,21 @@
         padding: 20px 20px 60px;
     }
 
-    /* Sur petit ecran la page entiere defile : ni calage, ni mise en retrait. */
+    /* Sur petit ecran la page entiere defile : ni carrousel, ni mise en retrait. */
     .processusSteps {
         overflow: visible;
-        scroll-snap-type: none;
-        padding: 0;
+    }
+
+    /* Le carrousel est desactive : le filet vertical revient dans le flux. */
+    .processusDeckViewport::before {
+        content: "";
+        position: absolute;
+        left: 12px;
+        transform: translateX(-50%);
+        top: 0;
+        bottom: 0;
+        width: 1px;
+        background: var(--line-strong);
     }
 
     .processusStepBody {
