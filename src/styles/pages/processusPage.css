@@ -23,6 +23,15 @@
     --rail-phase-x: 144px;
     --rail-step-x: 172px;
 
+    /*
+     * Hauteur fixe du bandeau du bas, calee sur le panneau « Avancement » :
+     * ~87px de contenu (titre, une ligne de mesures, la piste des sections)
+     * auxquels s'ajoutent les 22px de padding vertical du bandeau lui-meme.
+     * Fixe et non dictee par le contenu : sinon un portrait plus long ou un
+     * historique qui s'allonge redimensionnerait le carrousel au-dessus.
+     */
+    --rail-band-h: 112px;
+
     position: relative;
     /* 100vw compte la barre de defilement : la page deborderait a l'horizontale. */
     width: 100%;
@@ -55,11 +64,13 @@
 .processusRail {
     flex: 0 0 auto;
     width: 100%;
+    /* Le bandeau ne bouge plus : la bande laissee au carrousel est stable. */
+    height: var(--rail-band-h);
     padding: 10px 40px 12px;
     border-top: 1px solid var(--line);
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
-    align-items: start;
+    align-items: stretch;
     gap: 10px;
 }
 
@@ -68,9 +79,16 @@
  * Les reglages restent portes par .processusRail — les memes classes servent
  * ailleurs sur la page (etat vide, panneau d'envoi), a leur taille normale.
  */
+/*
+ * Chaque panneau remplit exactement la bande. Ce qui deborde defile chez lui
+ * (portrait, historique) plutot que de repousser le bandeau.
+ */
 .processusRail .processusPanel {
+    height: 100%;
+    min-height: 0;
     padding: 9px 11px;
     gap: 6px;
+    overflow: hidden;
 }
 
 .processusRail .processusPanelTitle {
@@ -85,20 +103,32 @@
 
 /* Le portrait passe sur deux colonnes : quatre criteres empiles doubleraient
    la hauteur du bandeau. */
+/*
+ * Deux colonnes, deux rangees : les quatre criteres tiennent d'un bloc dans la
+ * hauteur du panneau (~53px une fois le titre pose). Les interlignes sont
+ * resserres juste ce qu'il faut — a 1.25 d'interligne, la seconde rangee
+ * debordait de deux pixels et se retrouvait tronquee.
+ */
 .processusRail .processusPortrait {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 5px 10px;
+    gap: 4px 12px;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    align-content: start;
 }
 
 .processusRail .processusPortrait dt {
-    font-size: 9px;
+    font-size: 8.5px;
+    letter-spacing: 0.8px;
+    line-height: 1.1;
 }
 
 .processusRail .processusPortrait dd {
     margin-top: 0;
     font-size: 11.5px;
-    line-height: 1.25;
+    line-height: 1.2;
 }
 
 .processusRail .processusStats {
@@ -119,8 +149,11 @@
     font-size: 9px;
 }
 
+/* L'historique prend la place restante du panneau, et defile au-dela. */
 .processusRail .processusList {
-    max-height: 74px;
+    max-height: none;
+    flex: 1 1 auto;
+    min-height: 0;
     gap: 3px;
 }
 
@@ -137,6 +170,7 @@
 }
 
 .processusRail .processusRailActions {
+    flex: 0 0 auto;
     gap: 7px;
     margin-top: 0;
 }
@@ -1363,9 +1397,24 @@
         overflow: visible;
     }
 
+    /* Panneaux empiles et page defilante : la hauteur fixe n'a plus de sens. */
     .processusRail {
+        height: auto;
         padding: 20px 20px 48px;
         grid-template-columns: 1fr;
+    }
+
+    .processusRail .processusPanel {
+        height: auto;
+        overflow: visible;
+    }
+
+    .processusRail .processusPortrait {
+        overflow-y: visible;
+    }
+
+    .processusRail .processusList {
+        max-height: 180px;
     }
 
     .processusStage {

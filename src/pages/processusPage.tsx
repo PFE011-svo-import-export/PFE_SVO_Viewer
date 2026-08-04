@@ -159,7 +159,8 @@ function PortraitPanel({ entries }: { entries: { label: string; value: string }[
             {entries.map((entry) => (
                 <div key={entry.label}>
                     <dt>{entry.label}</dt>
-                    <dd>{entry.value}</dd>
+                    {/* Filet de securite si un libelle long venait a etre rogne. */}
+                    <dd title={entry.value}>{entry.value}</dd>
                 </div>
             ))}
         </dl>
