@@ -13,6 +13,14 @@
     --accent: #1a6f8f;
     --done: #24631e;
 
+    /*
+     * Gouttiere de navigation, de gauche a droite :
+     * libelles de phase | rail des phases | rail des etapes | nom de l'etape
+     * Les cartes commencent apres (cf. .processusDeckCard).
+     */
+    --rail-phase-x: 104px;
+    --rail-step-x: 132px;
+
     position: relative;
     /* 100vw compte la barre de defilement : la page deborderait a l'horizontale. */
     width: 100%;
@@ -551,12 +559,88 @@
 .processusDeckRail {
     position: absolute;
     top: 0;
-    left: 26px;
+    left: var(--rail-step-x);
     width: 0;
     height: 0;
     z-index: 120;
     /* Le rail ne capte rien : seules ses billes sont cliquables. */
     pointer-events: none;
+}
+
+/* Rail des phases : meme construction, une colonne plus a gauche. */
+.processusDeckPhaseRail {
+    position: absolute;
+    top: 0;
+    left: var(--rail-phase-x);
+    width: 0;
+    height: 0;
+    z-index: 120;
+    pointer-events: none;
+}
+
+.processusPhaseDot {
+    position: absolute;
+    left: 0;
+    width: 11px;
+    height: 11px;
+    padding: 0;
+    border-radius: 50%;
+    background: transparent;
+    border: 1px solid rgba(68, 50, 35, 0.45);
+    transform: translate(-50%, -50%);
+    cursor: pointer;
+    pointer-events: auto;
+    overflow: visible;
+    transition: width 0.28s ease, height 0.28s ease, background 0.28s, border-color 0.28s, box-shadow 0.28s;
+}
+
+.processusPhaseDot:hover {
+    border-color: var(--brown);
+    box-shadow: 0 0 0 4px rgba(68, 50, 35, 0.12);
+}
+
+.processusPhaseDot:focus-visible {
+    outline: 1px solid var(--brown);
+    outline-offset: 3px;
+}
+
+/*
+ * La phase posee est marquee a l'encre brune, quand l'etape posee l'est en
+ * accent : les deux lignes restent distinctes d'un coup d'oeil.
+ */
+.processusPhaseDot--active {
+    width: 15px;
+    height: 15px;
+    background: var(--brown);
+    border-color: var(--brown);
+    box-shadow: 0 0 0 4px rgba(68, 50, 35, 0.16);
+}
+
+/* Libelles poses a gauche du rail, alignes sur lui par leur bord droit. */
+.processusPhaseDotTag {
+    position: absolute;
+    right: calc(100% + 10px);
+    top: 50%;
+    transform: translateY(-50%);
+    width: 84px;
+    text-align: right;
+    font-family: "Bitcount Single", sans-serif;
+    font-size: 9px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    line-height: 1.25;
+    color: var(--muted);
+    pointer-events: none;
+}
+
+.processusPhaseDotTag--active {
+    font-family: "Playfair Display", serif;
+    font-size: 11.5px;
+    font-weight: 600;
+    letter-spacing: 0;
+    text-transform: none;
+    line-height: 1.3;
+    color: var(--ink);
 }
 
 /* Le filet couvre exactement la course des billes (hauteur posee en ligne). */
@@ -617,7 +701,7 @@
     left: calc(100% + 12px);
     top: 50%;
     transform: translateY(-50%);
-    width: 152px;
+    width: 140px;
     font-size: 12px;
     line-height: 1.3;
     color: var(--ink);
@@ -634,8 +718,8 @@
 .processusSteps--deck .processusDeckCard {
     position: absolute;
     top: 0;
-    /* Gouttiere de navigation : le rail et les etiquettes de phase y logent. */
-    left: 210px;
+    /* Apres la gouttiere : deux rails et leurs libelles y logent. */
+    left: 300px;
     right: 12px;
     max-width: 1120px;
     margin: 0;

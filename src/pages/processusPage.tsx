@@ -989,10 +989,10 @@ function ProcessusPage() {
     }, [currentPosition, timeline.length, goToPosition]);
 
     /*
-     * Geometrie du rail. Il est fixe : les billes se repartissent une fois pour
-     * toutes sur la hauteur du cadre, du haut vers le bas, et n'obeissent plus au
-     * defilement. Le plan sur lequel elles reposent est centre, d'ou l'origine au
-     * milieu et des decalages qui vont de -h/2 a +h/2.
+     * Geometrie des rails. Ils sont fixes : les billes se repartissent une fois
+     * pour toutes sur la hauteur du cadre, du haut vers le bas, et n'obeissent
+     * plus au defilement. Le plan sur lequel elles reposent est centre, d'ou
+     * l'origine au milieu et des decalages qui vont de -h/2 a +h/2.
      */
     const railHeight = deckHeight * RAIL_SPAN;
 
@@ -1000,6 +1000,34 @@ function ProcessusPage() {
         if (slotCount <= 1) return 0;
         return (index / (slotCount - 1) - 0.5) * railHeight;
     };
+
+    /**
+     * Phase posee : celle qui contient l'etape au centre. La carte de fin, qui
+     * suit la derniere etape, reste rattachee a la derniere phase.
+     */
+    const activePhaseIndex = useMemo(() => {
+        const index = phases.findIndex((phase) =>
+            phase.steps.some((entry) => entry.position === activePosition));
+        if (index >= 0) return index;
+
+        return activePosition > timeline.length ? Math.max(phases.length - 1, 0) : 0;
+    }, [phases, activePosition, timeline.length]);
+
+    /**
+     * Reperes du rail des phases : chaque bille se pose au milieu de l'etendue
+     * de sa phase, donc en face du groupe d'etapes qu'elle couvre sur l'autre
+     * ligne. Les deux rails se lisent ainsi a la meme hauteur.
+     */
+    const phaseMarks = useMemo(
+        () =>
+            phases.map((phase, index) => {
+                const first = phase.steps[0].position;
+                const last = phase.steps[phase.steps.length - 1].position;
+
+                return { index, key: phase.key, label: phase.label, first, last };
+            }),
+        [phases],
+    );
 
     /*
      * L'ordre du document est celui de la lecture : le processus d'abord, ses
@@ -1192,10 +1220,59 @@ function ProcessusPage() {
                             }
                         >
                             {/*
-                              * Ligne de navigation unique et fixe : une bille par etape,
-                              * toutes identiques. Le defilement n'y deplace rien, il ne
-                              * fait qu'y avancer le repere courant — seul ecart de
-                              * traitement, avec le nom de l'etape posee.
+                              * Rail des phases, a gauche de celui des etapes : une bille
+                              * par phase, posee en face du groupe d'etapes qu'elle couvre.
+                              * Les deux lignes donnent les deux echelles de lecture du
+                              * processus sans jamais se melanger.
+                              */}
+                            {deckEnabled && phaseMarks.length > 0 && (
+                                <nav className="processusDeckPhaseRail" aria-label="Phases du processus">
+                                    <span
+                                        className="processusDeckRailLine"
+                                        aria-hidden="true"
+                                        style={{
+                                            top: `${(-railHeight / 2).toFixed(1)}px`,
+                                            height: `${railHeight.toFixed(1)}px`,
+                                        }}
+                                    />
+                                    {phaseMarks.map((mark) => {
+                                        const isActive = mark.index === activePhaseIndex;
+                                        const offset =
+                                            (railOffsetOf(mark.first - 1) + railOffsetOf(mark.last - 1)) / 2;
+                                        const label = `${mark.key} — ${mark.label}`;
+
+                                        return (
+                                            <button
+                                                key={`phase-${mark.key}-${mark.index}`}
+                                                type="button"
+                                                className={`processusPhaseDot${
+                                                    isActive ? " processusPhaseDot--active" : ""
+                                                }`}
+                                                style={{ top: `${offset.toFixed(1)}px` }}
+                                                onClick={() => goToPosition(mark.first)}
+                                                aria-current={isActive ? "step" : undefined}
+                                                aria-label={label}
+                                                title={label}
+                                            >
+                                                {/* La phase posee est nommee, les autres gardent leur code. */}
+                                                <span
+                                                    className={`processusPhaseDotTag${
+                                                        isActive ? " processusPhaseDotTag--active" : ""
+                                                    }`}
+                                                >
+                                                    {isActive ? mark.label : mark.key}
+                                                </span>
+                                            </button>
+                                        );
+                                    })}
+                                </nav>
+                            )}
+
+                            {/*
+                              * Rail des etapes : une bille par etape, toutes identiques.
+                              * Le defilement n'y deplace rien, il ne fait qu'y avancer le
+                              * repere courant — seul ecart de traitement, avec le nom de
+                              * l'etape posee.
                               */}
                             {deckEnabled && (
                                 <nav className="processusDeckRail" aria-label="Étapes du processus">
