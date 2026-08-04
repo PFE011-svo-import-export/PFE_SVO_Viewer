@@ -69,7 +69,16 @@
     padding: 10px 40px 12px;
     border-top: 1px solid var(--line);
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    /*
+     * Trois panneaux, quatre colonnes : la derniere reste vide et reserve le
+     * coin ou se pose la bulle de l'assistant (fixe a right: 150px), pour
+     * qu'elle ne recouvre pas l'historique.
+     */
+    grid-template-columns:
+        minmax(0, 1fr)
+        minmax(0, 1fr)
+        minmax(0, 0.62fr)
+        360px;
     align-items: stretch;
     gap: 10px;
 }
@@ -149,24 +158,82 @@
     font-size: 9px;
 }
 
-/* L'historique prend la place restante du panneau, et defile au-dela. */
-.processusRail .processusList {
-    max-height: none;
-    flex: 1 1 auto;
-    min-height: 0;
-    gap: 3px;
-}
+/* --- Historique : menu deroulant ------------------------------------------ */
 
-.processusRail .processusListItem {
-    padding: 5px 8px;
-}
-
-.processusRail .processusListCode {
+.processusSelectTrigger {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    width: 100%;
+    padding: 6px 9px;
+    font-family: "Bitcount Single", sans-serif;
     font-size: 11px;
+    letter-spacing: 0.5px;
+    color: var(--ink);
+    background: rgba(255, 245, 245, 0.55);
+    border: 1px solid var(--line-strong);
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.2s, border-color 0.2s;
 }
 
-.processusRail .processusListMeta {
+.processusSelectTrigger:hover:not(:disabled) {
+    background: rgba(255, 245, 245, 0.85);
+    border-color: var(--brown);
+}
+
+.processusSelectTrigger:focus-visible {
+    outline: 1px solid var(--brown);
+    outline-offset: 1px;
+}
+
+.processusSelectTrigger:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+
+.processusSelectIcon {
     font-size: 10px;
+    color: var(--muted);
+}
+
+/*
+ * Le menu est porte par un portail, hors de #processusPage : les variables de
+ * la page n'y arrivent pas, d'ou les valeurs litterales.
+ */
+.processusSelectContent {
+    z-index: 300;
+    max-height: 40vh;
+    overflow: hidden;
+    background: #f3e6d8;
+    border: 1px solid rgba(68, 50, 35, 0.5);
+    box-shadow: 0 10px 28px rgba(43, 33, 24, 0.28);
+}
+
+.processusSelectItem {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    padding: 7px 10px;
+    font-family: "Bitcount Single", sans-serif;
+    font-size: 11px;
+    letter-spacing: 0.5px;
+    color: #2b2118;
+    cursor: pointer;
+    outline: none;
+}
+
+.processusSelectItem[data-highlighted] {
+    background: #443223;
+    color: #fff5f5;
+}
+
+.processusSelectItemMeta {
+    font-family: "Playfair Display", serif;
+    font-size: 10px;
+    letter-spacing: 0;
+    opacity: 0.7;
 }
 
 .processusRail .processusRailActions {
@@ -391,60 +458,6 @@
 @keyframes processusPulse {
     from { background: transparent; }
     to { background: rgba(26, 111, 143, 0.16); }
-}
-
-/* --- Liste des processus -------------------------------------------------- */
-
-.processusList {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    max-height: 240px;
-    overflow-y: auto;
-}
-
-.processusListItem {
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 2px;
-    padding: 8px 10px;
-    background: transparent;
-    border: 1px solid var(--line);
-    cursor: pointer;
-    text-align: left;
-    transition: background 0.2s, border-color 0.2s;
-}
-
-.processusListItem:hover:not(:disabled) {
-    background: rgba(255, 245, 245, 0.6);
-    border-color: var(--line-strong);
-}
-
-.processusListItem--active {
-    background: rgba(255, 245, 245, 0.85);
-    border-color: var(--brown);
-}
-
-.processusListItem:disabled {
-    opacity: 0.5;
-    cursor: default;
-}
-
-.processusListCode {
-    font-family: "Bitcount Single", sans-serif;
-    font-size: 12px;
-    letter-spacing: 0.5px;
-    overflow-wrap: anywhere;
-}
-
-.processusListMeta {
-    font-size: 11px;
-    color: var(--muted);
 }
 
 /* --- Scene principale ----------------------------------------------------- */
@@ -1411,10 +1424,6 @@
 
     .processusRail .processusPortrait {
         overflow-y: visible;
-    }
-
-    .processusRail .processusList {
-        max-height: 180px;
     }
 
     .processusStage {

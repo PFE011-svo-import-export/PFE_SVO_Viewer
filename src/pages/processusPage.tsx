@@ -11,6 +11,8 @@ import {
     type ReactNode,
 } from "react";
 import { Link, useSearchParams } from "react-router-dom";
+import * as Select from "@radix-ui/react-select";
+import ChatBot from "../components/footer/chatBot";
 import {
     getIncoterms,
     getMerchandise,
@@ -519,10 +521,10 @@ function ProcessusPage() {
     const [timeline, setTimeline] = useState<BuildStep[]>([]);
     /** Branche retenue pour chaque QuestionStep deja repondue. */
     const [choices, setChoices] = useState<Record<string, string>>({});
-    /** "build" = session active (on peut repondre), "review" = simple consultation. */
-    const [mode, setMode] = useState<"idle" | "build" | "review">("idle");
 
     const [processes, setProcesses] = useState<ProcessRecord[]>([]);
+    /** Identifiant du processus ouvert : deux enregistrements peuvent partager un code. */
+    const [openedProcessId, setOpenedProcessId] = useState<number | null>(null);
     const [busy, setBusy] = useState<Busy>("");
     const [error, setError] = useState("");
 
@@ -797,14 +799,14 @@ function ProcessusPage() {
             setResult(null);
             setPortrait(criteria);
             setProcessCode(buildProcessCode(criteria));
-            setMode("build");
+            // Nouvelle construction : le menu deroulant ne designe plus rien.
+            setOpenedProcessId(null);
 
             try {
                 applyResult(await startProcessBuild(criteria));
                 refreshProcesses();
             } catch (caught) {
                 setError(errorMessage(caught));
-                setMode("idle");
             } finally {
                 setBusy("");
             }
@@ -897,7 +899,7 @@ function ProcessusPage() {
         setActivePosition(1);
         setChoices({});
         setResult(null);
-        setMode("review");
+        setOpenedProcessId(record.id);
         setProcessCode(record.code);
         setPortrait({
             codeSH: record.codeSH,
@@ -1140,29 +1142,56 @@ function ProcessusPage() {
                 {processes.length === 0 ? (
                     <p className="processusPanelHint">Aucun processus enregistré pour le moment.</p>
                 ) : (
-                    <ul className="processusList">
-                        {[...processes].reverse().map((record) => (
-                            <li key={record.id}>
-                                <button
-                                    type="button"
-                                    className={`processusListItem${
-                                        processCode === record.code && mode === "review"
-                                            ? " processusListItem--active"
-                                            : ""
-                                    }`}
-                                    onClick={() => handleOpen(record)}
-                                    disabled={busy !== ""}
-                                >
-                                    <span className="processusListCode">{record.code}</span>
-                                    <span className="processusListMeta">
-                                        #{record.id} · {record.status}
-                                    </span>
-                                </button>
-                            </li>
-                        ))}
-                    </ul>
+                    /*
+                     * Menu deroulant plutot qu'une liste qui defile : le panneau
+                     * garde une hauteur constante et la liste s'ouvre par-dessus
+                     * le reste, sans etre bornee par la bande.
+                     */
+                    <Select.Root
+                        value={openedProcessId === null ? undefined : String(openedProcessId)}
+                        onValueChange={(value) => {
+                            const record = processes.find((item) => String(item.id) === value);
+                            if (record) void handleOpen(record);
+                        }}
+                        disabled={busy !== ""}
+                    >
+                        <Select.Trigger className="processusSelectTrigger" aria-label="Processus enregistrés">
+                            <Select.Value placeholder="Ouvrir un processus…" />
+                            <Select.Icon className="processusSelectIcon">▾</Select.Icon>
+                        </Select.Trigger>
+                        <Select.Portal>
+                            <Select.Content
+                                className="processusSelectContent"
+                                position="popper"
+                                side="top"
+                                sideOffset={4}
+                            >
+                                <Select.Viewport>
+                                    {[...processes].reverse().map((record) => (
+                                        <Select.Item
+                                            key={record.id}
+                                            value={String(record.id)}
+                                            className="processusSelectItem"
+                                        >
+                                            <Select.ItemText>{record.code}</Select.ItemText>
+                                            <span className="processusSelectItemMeta">
+                                                #{record.id} · {record.status}
+                                            </span>
+                                        </Select.Item>
+                                    ))}
+                                </Select.Viewport>
+                            </Select.Content>
+                        </Select.Portal>
+                    </Select.Root>
                 )}
             </section>
+
+            {/*
+              * Exactement l'assistant de l'accueil : flottant, replie sur sa
+              * bulle. Etant en position fixe, il ne prend pas de case dans la
+              * grille — la derniere colonne reste libre pour l'accueillir.
+              */}
+            <ChatBot />
         </aside>
     );
 
