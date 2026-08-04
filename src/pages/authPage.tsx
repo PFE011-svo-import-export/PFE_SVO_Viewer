@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import PasswordInput from "../components/passwordInput";
 import '../styles/pages/authPage.css'
 
 /**
@@ -56,12 +57,11 @@ function AuthPage() {
                     />
 
                     <label htmlFor="authPassword">Mot de passe</label>
-                    <input
+                    <PasswordInput
                         id="authPassword"
                         className="authFormInputField"
-                        type="password"
                         value={password}
-                        onChange={(e) => setPassword(e.target.value)}
+                        onChange={setPassword}
                         autoComplete="current-password"
                         required
                     />

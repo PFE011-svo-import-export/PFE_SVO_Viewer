@@ -27,6 +27,16 @@
     padding: 8px;
 }
 
+/* Champ revelable : la marge passe sur le conteneur, sinon l'oeil (cale sur la
+   hauteur de celui-ci) descendrait sous le champ. */
+.authInputHolder .passwordField {
+    margin-bottom: 12px;
+}
+
+.authInputHolder .passwordField > .authFormInputField {
+    margin-bottom: 0;
+}
+
 .authError {
     color: red;
     margin: 4px 0;

@@ -141,7 +141,7 @@ function LandingPage() {
                     <br /> 
                     <div className="landingInstructionInnerText">
 
-                        CRITÈRES DE SIMULATION:
+                        CRITÈRES D'IMPORTATION:
                     </div>
                 </div>
                 <div className="landingFilters">

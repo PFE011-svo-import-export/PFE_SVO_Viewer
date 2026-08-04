@@ -1,19 +1,28 @@
 import { useEffect, useRef, useState } from "react";
 import { askQuestionStream } from "../../services/chat";
+import { useAuth } from "../../context/AuthContext";
 
 interface Message {
     role: "user" | "assistant";
     text: string;
 }
 
+/** Seuls ces roles voient l'assistant : il reste invisible au public. */
+const CHATBOT_ROLES = ["Admin", "CAPD"];
+
 /**
  * Assistant Q&R sur la legislation import-export.
+ *
+ * Reserve aux utilisateurs connectes (Admin / CAPD) : la garde vit ici plutot
+ * que chez l'appelant, pour qu'aucun futur point de montage ne l'expose au
+ * visiteur anonyme.
  *
  * Chaque question est envoyee seule : l'historique affiche ci-dessous sert a
  * l'utilisateur, il n'est jamais renvoye au serveur. Il vit dans ce composant,
  * donc il disparait au rechargement de la page et reste propre a ce navigateur.
  */
 function ChatBot() {
+    const { role } = useAuth();
     const [isOpen, setIsOpen] = useState(false);
     const [messages, setMessages] = useState<Message[]>([]);
     const [input, setInput] = useState("");
@@ -70,6 +79,10 @@ function ChatBot() {
             setIsLoading(false);
         }
     };
+
+    // Garde placee apres les hooks : leur ordre doit rester stable d'un rendu a
+    // l'autre, y compris quand l'utilisateur se connecte ou se deconnecte.
+    if (!CHATBOT_ROLES.includes(role)) return null;
 
     if (!isOpen) {
         return (

@@ -11,6 +11,7 @@ const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:5294";
 
 const TOKEN_KEY = "svo_token";
 const ROLE_KEY = "svo_role";
+const EMAIL_KEY = "svo_email";
 
 /**
  * Emis quand un appel authentifie revient en 401 (token expire/invalide).
@@ -24,6 +25,8 @@ export type UserRole = "" | "Admin" | "CAPD";
 export interface LoginResult {
     ok: boolean;
     role: UserRole;
+    /** Email du compte connecte ("" quand la connexion a echoue). */
+    email: string;
     /** Message a afficher quand ok === false. */
     error?: string;
 }
@@ -33,6 +36,7 @@ interface LoginResponse {
     token: string;
     expires: string;
     role: UserRole;
+    email: string;
 }
 
 export async function login(email: string, password: string): Promise<LoginResult> {
@@ -44,28 +48,29 @@ export async function login(email: string, password: string): Promise<LoginResul
             body: JSON.stringify({ Email: email, Password: password }),
         });
     } catch {
-        return { ok: false, role: "", error: "Impossible de joindre le serveur." };
+        return { ok: false, role: "", email: "", error: "Impossible de joindre le serveur." };
     }
 
     if (response.status === 401) {
-        return { ok: false, role: "", error: "Email ou mot de passe invalide." };
+        return { ok: false, role: "", email: "", error: "Email ou mot de passe invalide." };
     }
     if (!response.ok) {
-        return { ok: false, role: "", error: `Erreur serveur (${response.status}).` };
+        return { ok: false, role: "", email: "", error: `Erreur serveur (${response.status}).` };
     }
 
     const data = (await response.json()) as Partial<LoginResponse>;
     if (!data.token) {
-        return { ok: false, role: "", error: "Reponse invalide du serveur." };
+        return { ok: false, role: "", email: "", error: "Reponse invalide du serveur." };
     }
 
-    saveSession(data.token, data.role ?? "");
-    return { ok: true, role: data.role ?? "" };
+    saveSession(data.token, data.role ?? "", data.email ?? email);
+    return { ok: true, role: data.role ?? "", email: data.email ?? email };
 }
 
 export function logout(): void {
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(ROLE_KEY);
+    localStorage.removeItem(EMAIL_KEY);
 }
 
 /**
@@ -105,7 +110,13 @@ export function getStoredRole(): UserRole {
     return (localStorage.getItem(ROLE_KEY) as UserRole | null) ?? "";
 }
 
-function saveSession(token: string, role: UserRole): void {
+/** Email memorise localement, pour reconnaitre son propre compte dans les listes. */
+export function getStoredEmail(): string {
+    return localStorage.getItem(EMAIL_KEY) ?? "";
+}
+
+function saveSession(token: string, role: UserRole, email: string): void {
     localStorage.setItem(TOKEN_KEY, token);
     localStorage.setItem(ROLE_KEY, role);
+    localStorage.setItem(EMAIL_KEY, email);
 }
