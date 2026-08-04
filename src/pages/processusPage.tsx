@@ -1029,6 +1029,34 @@ function ProcessusPage() {
         [phases],
     );
 
+    /**
+     * Reperes du rail des sections : meme principe, une echelle au-dessus.
+     * Les etapes d'une meme section se suivent (leur code commence par sa
+     * lettre), on regroupe donc les tranches consecutives.
+     */
+    const sectionMarks = useMemo(() => {
+        const grouped: { letter: string; label: string; first: number; last: number }[] = [];
+
+        timeline.forEach((step, index) => {
+            const section = sectionOf(step);
+            const letter = section?.letter ?? step.code.charAt(0).toUpperCase();
+            const previous = grouped[grouped.length - 1];
+
+            if (previous && previous.letter === letter) previous.last = index + 1;
+            else grouped.push({ letter, label: section?.label ?? letter, first: index + 1, last: index + 1 });
+        });
+
+        return grouped;
+    }, [timeline]);
+
+    const activeSectionIndex = useMemo(() => {
+        const index = sectionMarks.findIndex(
+            (mark) => activePosition >= mark.first && activePosition <= mark.last);
+        if (index >= 0) return index;
+
+        return activePosition > timeline.length ? Math.max(sectionMarks.length - 1, 0) : 0;
+    }, [sectionMarks, activePosition, timeline.length]);
+
     /*
      * L'ordre du document est celui de la lecture : le processus d'abord, ses
      * a-cotes ensuite. Le portrait, l'avancement et l'historique ne se
@@ -1049,11 +1077,9 @@ function ProcessusPage() {
                     </p>
                 )}
 
-                <div className="processusRailActions">
-                    <Link to="/" className="processusGhostButton processusLinkButton">
-                        {portraitEntries ? "Changer les critères" : "Choisir les critères"}
-                    </Link>
-                    {urlCriteria && (
+                {/* Le retour aux criteres passe par l'accueil : le logo y mene. */}
+                {urlCriteria && (
+                    <div className="processusRailActions">
                         <button
                             type="button"
                             className="processusPrimaryButton"
@@ -1062,8 +1088,8 @@ function ProcessusPage() {
                         >
                             {busy === "start" ? "Assemblage…" : "Relancer ►"}
                         </button>
-                    )}
-                </div>
+                    </div>
+                )}
             </section>
 
             {timeline.length > 0 && (
@@ -1220,10 +1246,51 @@ function ProcessusPage() {
                             }
                         >
                             {/*
-                              * Rail des phases, a gauche de celui des etapes : une bille
-                              * par phase, posee en face du groupe d'etapes qu'elle couvre.
-                              * Les deux lignes donnent les deux echelles de lecture du
-                              * processus sans jamais se melanger.
+                              * Rail des sections, le plus a gauche : l'echelle la plus
+                              * large. La bille porte la lettre de sa section, ce qui lui
+                              * evite une colonne de libelles supplementaire.
+                              */}
+                            {deckEnabled && sectionMarks.length > 0 && (
+                                <nav className="processusDeckSectionRail" aria-label="Sections du processus">
+                                    <span
+                                        className="processusDeckRailLine"
+                                        aria-hidden="true"
+                                        style={{
+                                            top: `${(-railHeight / 2).toFixed(1)}px`,
+                                            height: `${railHeight.toFixed(1)}px`,
+                                        }}
+                                    />
+                                    {sectionMarks.map((mark, index) => {
+                                        const isActive = index === activeSectionIndex;
+                                        const offset =
+                                            (railOffsetOf(mark.first - 1) + railOffsetOf(mark.last - 1)) / 2;
+                                        const label = `${mark.letter} — ${mark.label}`;
+
+                                        return (
+                                            <button
+                                                key={`section-${mark.letter}-${index}`}
+                                                type="button"
+                                                className={`processusSectionDot${
+                                                    isActive ? " processusSectionDot--active" : ""
+                                                }`}
+                                                style={{ top: `${offset.toFixed(1)}px` }}
+                                                onClick={() => goToPosition(mark.first)}
+                                                aria-current={isActive ? "step" : undefined}
+                                                aria-label={label}
+                                                title={label}
+                                            >
+                                                {mark.letter}
+                                            </button>
+                                        );
+                                    })}
+                                </nav>
+                            )}
+
+                            {/*
+                              * Rail des phases, entre les sections et les etapes : une
+                              * bille par phase, posee en face du groupe d'etapes qu'elle
+                              * couvre. Les trois lignes donnent les trois echelles de
+                              * lecture du processus sans jamais se melanger.
                               */}
                             {deckEnabled && phaseMarks.length > 0 && (
                                 <nav className="processusDeckPhaseRail" aria-label="Phases du processus">

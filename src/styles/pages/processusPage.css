@@ -14,12 +14,14 @@
     --done: #24631e;
 
     /*
-     * Gouttiere de navigation, de gauche a droite :
-     * libelles de phase | rail des phases | rail des etapes | nom de l'etape
+     * Gouttiere de navigation, de gauche a droite — trois echelles de lecture,
+     * de la plus large a la plus fine :
+     * sections | libelles de phase | phases | etapes | nom de l'etape
      * Les cartes commencent apres (cf. .processusDeckCard).
      */
-    --rail-phase-x: 104px;
-    --rail-step-x: 132px;
+    --rail-section-x: 24px;
+    --rail-phase-x: 144px;
+    --rail-step-x: 172px;
 
     position: relative;
     /* 100vw compte la barre de defilement : la page deborderait a l'horizontale. */
@@ -300,9 +302,10 @@
 
 /* --- Avancement ----------------------------------------------------------- */
 
+/* Les quatre mesures se lisent d'une traite, sur une seule ligne. */
 .processusStats {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(4, 1fr);
     gap: 10px 12px;
     margin: 0;
 }
@@ -567,7 +570,70 @@
     pointer-events: none;
 }
 
-/* Rail des phases : meme construction, une colonne plus a gauche. */
+/* Rail des sections : meme construction, la colonne la plus a gauche. */
+.processusDeckSectionRail {
+    position: absolute;
+    top: 0;
+    left: var(--rail-section-x);
+    width: 0;
+    height: 0;
+    z-index: 120;
+    pointer-events: none;
+}
+
+/*
+ * La bille de section porte sa lettre (A a E) : elle se nomme elle-meme, ce
+ * qui epargne une colonne de libelles a la gouttiere.
+ */
+.processusSectionDot {
+    position: absolute;
+    left: 0;
+    width: 17px;
+    height: 17px;
+    padding: 0;
+    border-radius: 50%;
+    background: transparent;
+    border: 1px solid rgba(68, 50, 35, 0.45);
+    transform: translate(-50%, -50%);
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: "Bitcount Single", sans-serif;
+    font-size: 9px;
+    line-height: 1;
+    color: var(--muted);
+
+    cursor: pointer;
+    pointer-events: auto;
+    overflow: visible;
+    transition: width 0.28s ease, height 0.28s ease, background 0.28s, border-color 0.28s,
+        color 0.28s, box-shadow 0.28s;
+}
+
+.processusSectionDot:hover {
+    border-color: var(--ink);
+    color: var(--ink);
+    box-shadow: 0 0 0 4px rgba(43, 33, 24, 0.1);
+}
+
+.processusSectionDot:focus-visible {
+    outline: 1px solid var(--brown);
+    outline-offset: 3px;
+}
+
+/* L'encre la plus sombre pour l'echelle la plus large. */
+.processusSectionDot--active {
+    width: 21px;
+    height: 21px;
+    font-size: 10px;
+    background: var(--ink);
+    border-color: var(--ink);
+    color: #fff5f5;
+    box-shadow: 0 0 0 4px rgba(43, 33, 24, 0.14);
+}
+
+/* Rail des phases : entre les sections et les etapes. */
 .processusDeckPhaseRail {
     position: absolute;
     top: 0;
@@ -718,8 +784,8 @@
 .processusSteps--deck .processusDeckCard {
     position: absolute;
     top: 0;
-    /* Apres la gouttiere : deux rails et leurs libelles y logent. */
-    left: 300px;
+    /* Apres la gouttiere : trois rails et leurs libelles y logent. */
+    left: 340px;
     right: 12px;
     max-width: 1120px;
     margin: 0;
