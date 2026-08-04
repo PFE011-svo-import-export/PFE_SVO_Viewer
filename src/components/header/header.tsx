@@ -46,8 +46,10 @@ function HeaderTabHolder() {
     const { role, isAuthenticated } = useAuth();
     return (
         <div className="headerTabHolder">
-            {/* Onglet visible uniquement apres connexion */}
+            {/* Onglets visibles uniquement apres connexion */}
             {isAuthenticated && <HeaderTab title="Processus" to="/processus" />}
+            {/* Gabarit des etapes : reserve au personnel (Admin / CAPD) */}
+            {(role === "Admin" || role === "CAPD") && <HeaderTab title="Étapes" to="/steps" />}
             {/* Gestion des comptes : reservee aux administrateurs */}
             {role === "Admin" && <HeaderTab title="Utilisateurs" to="/utilisateurs" />}
         </div>

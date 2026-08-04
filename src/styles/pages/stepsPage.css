@@ -1,0 +1,594 @@
+/* Page "Etapes" — CRUD du gabarit des processus.
+   Meme grammaire visuelle que Processus et Utilisateurs : fond sable #DDBFA3,
+   encre brune #443223, Playfair Display / Bitcount Single. */
+
+#stepsPage {
+    --ink: #2b2118;
+    --brown: #443223;
+    --line: rgba(68, 50, 35, 0.26);
+    --line-strong: rgba(68, 50, 35, 0.5);
+    --panel: rgba(255, 245, 245, 0.38);
+    --panel-solid: rgba(255, 245, 245, 0.72);
+    --muted: rgba(43, 33, 24, 0.62);
+    --accent: #1a6f8f;
+    --done: #24631e;
+    --amber: #8a5a1f;
+    --danger: #7a1f12;
+
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    padding-top: 60px;
+    box-sizing: border-box;
+    background-color: #DDBFA3;
+    color: var(--ink);
+    display: flex;
+    flex-direction: row;
+    overflow: hidden;
+}
+
+#stepsPage * {
+    font-family: "Playfair Display", serif;
+    box-sizing: border-box;
+}
+
+/* --- Colonne de gauche : le formulaire ------------------------------------ */
+
+.stepsRail {
+    flex: 0 0 380px;
+    height: 100%;
+    overflow-y: auto;
+    padding: 24px 20px 40px;
+    border-right: 1px solid var(--line);
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.stepsPanel {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.stepsPanelTitle {
+    font-family: "Bitcount Single", sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin: 0;
+    overflow-wrap: anywhere;
+}
+
+.stepsPanelHint {
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--muted);
+    margin: 0;
+}
+
+.stepsForm {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+/* --- Champs --------------------------------------------------------------- */
+
+.stepsField {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    min-width: 0;
+}
+
+.stepsFieldLabel {
+    font-family: "Bitcount Single", sans-serif;
+    font-size: 11px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--muted);
+}
+
+.stepsFieldHint {
+    font-size: 11px;
+    line-height: 1.45;
+    color: var(--muted);
+    margin: 0;
+}
+
+.stepsInput {
+    width: 100%;
+    padding: 8px 10px;
+    font-size: 13px;
+    color: inherit;
+    background: rgba(255, 245, 245, 0.55);
+    border: 1px solid var(--line);
+    border-radius: 0;
+    text-align: left;
+    transition: border-color 0.2s, background 0.2s;
+}
+
+.stepsInput:hover:not(:disabled) {
+    background: rgba(255, 245, 245, 0.8);
+}
+
+.stepsInput:focus-visible {
+    outline: none;
+    border-color: var(--brown);
+}
+
+.stepsInput:disabled {
+    opacity: 0.55;
+    cursor: default;
+}
+
+.stepsTextarea {
+    resize: vertical;
+    line-height: 1.5;
+}
+
+/* --- Choix exclusifs (type d'etape, route de legislation) ----------------- */
+
+.stepsTypeChoice {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.stepsTypeOption {
+    flex: 1 1 auto;
+    min-width: 72px;
+    padding: 7px 8px;
+    font-family: "Bitcount Single", sans-serif;
+    font-size: 11px;
+    letter-spacing: 0.5px;
+    color: var(--muted);
+    background: transparent;
+    border: 1px solid var(--line-strong);
+    cursor: pointer;
+    transition: background 0.25s, color 0.25s, border-color 0.25s;
+}
+
+.stepsTypeOption:hover:not(:disabled) {
+    border-color: var(--brown);
+    color: var(--ink);
+}
+
+.stepsTypeOption--picked {
+    background: var(--brown);
+    border-color: var(--brown);
+    color: #fff5f5;
+}
+
+.stepsTypeOption:disabled {
+    opacity: 0.45;
+    cursor: default;
+}
+
+/* --- Cases a cocher ------------------------------------------------------- */
+
+.stepsToggles {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+}
+
+.stepsToggle {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 12.5px;
+    cursor: pointer;
+}
+
+.stepsToggle input {
+    accent-color: var(--brown);
+    cursor: pointer;
+}
+
+/* --- Selecteur d'etapes liees --------------------------------------------- */
+
+.stepsPicker {
+    list-style: none;
+    margin: 4px 0 0;
+    padding: 0;
+    max-height: 168px;
+    overflow-y: auto;
+    border: 1px solid var(--line);
+    background: rgba(255, 245, 245, 0.4);
+}
+
+.stepsPickerItem {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    padding: 6px 9px;
+    cursor: pointer;
+    border-bottom: 1px solid rgba(68, 50, 35, 0.12);
+    transition: background 0.18s;
+}
+
+.stepsPickerItem:hover {
+    background: rgba(255, 245, 245, 0.75);
+}
+
+.stepsPicker li:last-child .stepsPickerItem {
+    border-bottom: none;
+}
+
+.stepsPickerItem input {
+    accent-color: var(--brown);
+    cursor: pointer;
+}
+
+.stepsPickerCode {
+    font-family: "Bitcount Single", sans-serif;
+    font-size: 11px;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+}
+
+.stepsPickerName {
+    font-size: 12px;
+    color: var(--muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.stepsPickerEmpty {
+    padding: 8px 9px;
+    font-size: 12px;
+    color: var(--muted);
+}
+
+/* --- Boutons -------------------------------------------------------------- */
+
+.stepsFormActions {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 4px;
+}
+
+.stepsPrimaryButton {
+    font-family: "Bitcount Single", sans-serif;
+    font-size: 13px;
+    letter-spacing: 1px;
+    padding: 9px 18px;
+    color: #fff5f5;
+    background: var(--brown);
+    border: 1px solid var(--brown);
+    cursor: pointer;
+    transition: transform 0.25s, background 0.25s;
+}
+
+.stepsPrimaryButton:hover:not(:disabled) {
+    background: var(--ink);
+    transform: skew(-8deg);
+}
+
+.stepsPrimaryButton:disabled {
+    opacity: 0.4;
+    cursor: default;
+}
+
+.stepsGhostButton {
+    font-family: "Bitcount Single", sans-serif;
+    font-size: 12px;
+    letter-spacing: 0.5px;
+    padding: 8px 12px;
+    color: var(--brown);
+    background: transparent;
+    border: 1px solid var(--line-strong);
+    cursor: pointer;
+    transition: background 0.25s, color 0.25s, border-color 0.25s;
+}
+
+.stepsGhostButton:hover:not(:disabled) {
+    background: var(--brown);
+    color: #fff5f5;
+}
+
+.stepsGhostButton:disabled {
+    opacity: 0.4;
+    cursor: default;
+}
+
+.stepsGhostButton--danger:hover:not(:disabled) {
+    background: var(--danger);
+    border-color: var(--danger);
+}
+
+.stepsDangerButton {
+    font-family: "Bitcount Single", sans-serif;
+    font-size: 12px;
+    letter-spacing: 0.5px;
+    padding: 8px 12px;
+    color: #fff5f5;
+    background: var(--danger);
+    border: 1px solid var(--danger);
+    cursor: pointer;
+    transition: transform 0.25s;
+}
+
+.stepsDangerButton:hover {
+    transform: skew(-8deg);
+}
+
+/* --- Scene principale : la liste ------------------------------------------ */
+
+.stepsStage {
+    flex: 1 1 auto;
+    min-width: 0;
+    height: 100%;
+    overflow-y: auto;
+    padding: 24px 40px 40px;
+    display: flex;
+    flex-direction: column;
+}
+
+.stepsStageHead {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 20px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--line);
+}
+
+.stepsStageEyebrow {
+    font-family: "Bitcount Single", sans-serif;
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0;
+}
+
+.stepsStageTitle {
+    font-size: 30px;
+    font-weight: 600;
+    margin: 2px 0 0;
+}
+
+.stepsCount {
+    flex: 0 0 auto;
+    font-family: "Bitcount Single", sans-serif;
+    font-size: 11px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 6px 12px;
+    border: 1px solid var(--line-strong);
+    white-space: nowrap;
+}
+
+/* --- Filtres par type ----------------------------------------------------- */
+
+.stepsFilters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 14px;
+}
+
+.stepsFilter {
+    font-family: "Bitcount Single", sans-serif;
+    font-size: 11px;
+    letter-spacing: 0.5px;
+    padding: 5px 11px;
+    color: var(--muted);
+    background: transparent;
+    border: 1px solid var(--line);
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s, border-color 0.2s;
+}
+
+.stepsFilter:hover {
+    border-color: var(--line-strong);
+    color: var(--ink);
+}
+
+.stepsFilter--picked {
+    background: var(--brown);
+    border-color: var(--brown);
+    color: #fff5f5;
+}
+
+/* --- Messages ------------------------------------------------------------- */
+
+.stepsError {
+    margin: 0;
+    padding: 10px 14px;
+    font-size: 13px;
+    color: var(--danger);
+    background: rgba(122, 31, 18, 0.1);
+    border-left: 3px solid var(--danger);
+}
+
+.stepsError--stage {
+    margin-top: 16px;
+}
+
+.stepsNotice {
+    margin: 16px 0 0;
+    padding: 10px 14px;
+    font-size: 13px;
+    color: var(--done);
+    background: rgba(36, 99, 30, 0.1);
+    border-left: 3px solid var(--done);
+}
+
+.stepsPlaceholder {
+    margin-top: 16vh;
+    text-align: center;
+    font-size: 14px;
+    color: var(--muted);
+}
+
+/* --- Lignes de la liste --------------------------------------------------- */
+
+.stepsList {
+    list-style: none;
+    margin: 16px 0 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.stepsRow {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 12px 14px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    transition: background 0.2s, border-color 0.2s;
+}
+
+.stepsRow:hover {
+    background: var(--panel-solid);
+    border-color: var(--line-strong);
+}
+
+.stepsRow--editing {
+    background: var(--panel-solid);
+    border-color: var(--accent);
+}
+
+.stepsRowIdentity {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.stepsRowHead {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.stepsRowCode {
+    font-family: "Bitcount Single", sans-serif;
+    font-size: 13px;
+    letter-spacing: 0.5px;
+    overflow-wrap: anywhere;
+}
+
+.stepsRowName {
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 1.3;
+    overflow-wrap: anywhere;
+}
+
+.stepsRowLinks {
+    font-family: "Bitcount Single", sans-serif;
+    font-size: 11px;
+    letter-spacing: 0.5px;
+    color: var(--muted);
+    overflow-wrap: anywhere;
+}
+
+.stepsTag {
+    font-family: "Bitcount Single", sans-serif;
+    font-size: 10px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    padding: 2px 7px;
+    border: 1px solid var(--line-strong);
+    color: var(--muted);
+}
+
+.stepsTag--standard {
+    border-color: var(--line-strong);
+    color: var(--muted);
+}
+
+.stepsTag--question {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+.stepsTag--rag {
+    border-color: var(--done);
+    color: var(--done);
+}
+
+.stepsTag--send {
+    border-color: var(--amber);
+    color: var(--amber);
+}
+
+.stepsFlag {
+    font-family: "Bitcount Single", sans-serif;
+    font-size: 9px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 2px 6px;
+    color: var(--brown);
+    background: rgba(68, 50, 35, 0.12);
+}
+
+.stepsRowActions {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.stepsConfirmLabel {
+    font-family: "Bitcount Single", sans-serif;
+    font-size: 11px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--danger);
+}
+
+/* --- Ecrans etroits ------------------------------------------------------- */
+
+@media (max-width: 1024px) {
+    #stepsPage {
+        flex-direction: column;
+        overflow-y: auto;
+    }
+
+    .stepsRail {
+        flex: 0 0 auto;
+        width: 100%;
+        height: auto;
+        overflow: visible;
+        border-right: none;
+        border-bottom: 1px solid var(--line);
+    }
+
+    .stepsStage {
+        height: auto;
+        overflow: visible;
+        padding: 20px 20px 60px;
+    }
+
+    .stepsRow {
+        flex-wrap: wrap;
+        align-items: flex-start;
+    }
+
+    .stepsRowActions {
+        width: 100%;
+        justify-content: flex-end;
+    }
+
+    .stepsPlaceholder {
+        margin-top: 40px;
+    }
+}

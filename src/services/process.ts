@@ -370,10 +370,13 @@ export function getProcesses(): Promise<ProcessRecord[]> {
     return sendJson<ProcessRecord[]>("/process", { method: "GET" });
 }
 
-/** Detail complet d'une etape a partir de son code (GET /steps/{code}). */
+/**
+ * Detail complet d'une etape a partir de son code (GET /steps/{code}).
+ * Route protegee (Admin / CAPD) : l'appel doit porter le token.
+ */
 export async function getStepByCode(stepCode: string): Promise<BuildStep> {
     const path = `/steps/${encodeURIComponent(stepCode)}`;
-    const response = await fetch(`${API_URL}${path}`);
+    const response = await authFetch(path);
     if (!response.ok) {
         throw new Error(await readError(response, path));
     }
