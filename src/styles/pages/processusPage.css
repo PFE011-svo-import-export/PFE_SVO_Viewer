@@ -410,63 +410,31 @@
     width: 100%;
     min-width: 0;
     min-height: 0;
-    padding: 14px 40px 0;
+    padding: 8px 40px 0;
     display: flex;
     flex-direction: column;
     overflow: hidden;
 }
 
-/* Le code du processus tient la tete de page, seul et centre. */
+/* Le code du processus, seul et centre : la tete de page reste mince. */
 .processusStageHead {
     flex: 0 0 auto;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 4px;
     text-align: center;
-    padding-bottom: 10px;
+    padding-bottom: 7px;
     border-bottom: 1px solid var(--line);
-}
-
-.processusStageEyebrow {
-    font-family: "Bitcount Single", sans-serif;
-    font-size: 11px;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    color: var(--muted);
-    margin: 0;
 }
 
 .processusStageTitle {
     font-family: "Bitcount Single", sans-serif;
-    font-size: 27px;
+    font-size: 23px;
     font-weight: 600;
     letter-spacing: 1px;
-    line-height: 1.15;
+    line-height: 1.1;
     margin: 0;
     overflow-wrap: anywhere;
-}
-
-.processusStatus {
-    flex: 0 0 auto;
-    font-family: "Bitcount Single", sans-serif;
-    font-size: 11px;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    padding: 6px 12px;
-    border: 1px solid var(--line-strong);
-    white-space: nowrap;
-}
-
-.processusStatus--waiting {
-    border-color: var(--accent);
-    color: var(--accent);
-}
-
-.processusStatus--done {
-    background: var(--done);
-    border-color: var(--done);
-    color: #fff5f5;
 }
 
 .processusError {
@@ -591,35 +559,39 @@
     pointer-events: none;
 }
 
+/* Le filet couvre exactement la course des billes (hauteur posee en ligne). */
 .processusDeckRailLine {
     position: absolute;
     left: 0;
-    top: calc(var(--deck-height, 100vh) / -2);
     width: 1px;
-    height: var(--deck-height, 100vh);
     background: var(--line-strong);
 }
 
+/*
+ * Billes fixes et toutes identiques : le rail donne l'echelle du processus,
+ * pas son decoupage. Leur position est posee une fois (top en ligne), et le
+ * defilement ne fait qu'y promener l'etat actif — seule distinction visuelle.
+ */
 .processusDeckDot {
     position: absolute;
-    top: 0;
     left: 0;
-    width: 10px;
-    height: 10px;
+    width: 7px;
+    height: 7px;
     padding: 0;
     border-radius: 50%;
-    background: #DDBFA3;
-    border: 1px solid var(--line-strong);
+    background: transparent;
+    border: 1px solid rgba(68, 50, 35, 0.42);
+    transform: translate(-50%, -50%);
     cursor: pointer;
     pointer-events: auto;
     /* L'etiquette est posee hors de la bille : le bouton ne doit pas la rogner. */
     overflow: visible;
-    transition: width 0.32s ease, height 0.32s ease, background 0.32s, border-color 0.32s, box-shadow 0.32s;
+    transition: width 0.28s ease, height 0.28s ease, background 0.28s, border-color 0.28s, box-shadow 0.28s;
 }
 
 .processusDeckDot:hover {
     border-color: var(--brown);
-    box-shadow: 0 0 0 4px rgba(68, 50, 35, 0.14);
+    box-shadow: 0 0 0 4px rgba(68, 50, 35, 0.12);
 }
 
 .processusDeckDot:focus-visible {
@@ -627,61 +599,29 @@
     outline-offset: 3px;
 }
 
-.processusDeckDot--done {
-    background: var(--brown);
-    border-color: var(--brown);
-}
-
-.processusDeckDot--current {
-    background: var(--accent);
-    border-color: var(--accent);
-}
-
+/* L'etape posee, et elle seule. */
 .processusDeckDot--active {
-    width: 20px;
-    height: 20px;
+    width: 13px;
+    height: 13px;
     background: var(--accent);
     border-color: var(--accent);
-    box-shadow: 0 0 0 5px rgba(26, 111, 143, 0.18);
+    box-shadow: 0 0 0 4px rgba(26, 111, 143, 0.18);
 }
 
-/* Jalon de phase : la meme ligne, une bille plus grosse. */
-.processusDeckDot--checkpoint {
-    width: 20px;
-    height: 20px;
-    border-width: 2px;
-    border-color: var(--brown);
-}
-
-.processusDeckDot--checkpoint.processusDeckDot--active {
-    width: 28px;
-    height: 28px;
-}
-
-/* Etiquette du jalon : posee a cote de la bille, sans peser sur sa boite. */
+/*
+ * Nom de l'etape posee. Une seule etiquette est montee a la fois : elle peut
+ * donc respirer sur deux ou trois lignes sans encombrer le rail.
+ */
 .processusDeckDotTag {
     position: absolute;
-    left: calc(100% + 11px);
+    left: calc(100% + 12px);
     top: 50%;
     transform: translateY(-50%);
-    font-family: "Bitcount Single", sans-serif;
-    font-size: 10px;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    color: var(--muted);
+    width: 152px;
+    font-size: 12px;
+    line-height: 1.3;
+    color: var(--ink);
     pointer-events: none;
-    transition: color 0.32s;
-
-    /* Tient dans la gouttiere : le libelle complet reste dans l'infobulle. */
-    max-width: 148px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.processusDeckDotTag--active {
-    color: var(--accent);
-    font-weight: 600;
 }
 
 /* --- Cartes du carrousel -------------------------------------------------- */

@@ -88,6 +88,8 @@ const DECK_MIN_GAP = 150;
 const DECK_MAX_GAP_RATIO = 0.46;
 /** Au-dela de cet ecart, la carte sort de la scene. */
 const DECK_RANGE = 1.85;
+/** Part de la hauteur du cadre occupee par le rail : le reste fait la marge. */
+const RAIL_SPAN = 0.94;
 /** En dessous, la page entiere defile : on retombe sur une liste classique. */
 const DECK_QUERY = "(min-width: 1025px)";
 
@@ -535,8 +537,6 @@ function ProcessusPage() {
     const deckScrollRef = useRef<HTMLDivElement>(null);
     /** Cartes montees, par position (1-based). */
     const cardRefs = useRef(new Map<number, HTMLElement>());
-    /** Billes du rail, par position : elles suivent les cartes sans reculer. */
-    const dotRefs = useRef(new Map<number, HTMLElement>());
     const deckFrame = useRef(0);
     /** Hauteur visible du cadre : fixe la course, le calage et l'ecart. */
     const [deckHeight, setDeckHeight] = useState(0);
@@ -547,11 +547,6 @@ function ProcessusPage() {
     const registerCard = (position: number) => (element: HTMLDivElement | null) => {
         if (element) cardRefs.current.set(position, element);
         else cardRefs.current.delete(position);
-    };
-
-    const registerDot = (position: number) => (element: HTMLElement | null) => {
-        if (element) dotRefs.current.set(position, element);
-        else dotRefs.current.delete(position);
     };
 
     /**
@@ -575,12 +570,10 @@ function ProcessusPage() {
         cardRefs.current.forEach((card, position) => {
             const offset = position - 1 - progress;
             const distance = Math.abs(offset);
-            const dot = dotRefs.current.get(position);
 
             if (distance > DECK_RANGE) {
                 card.style.visibility = "hidden";
                 card.style.opacity = "0";
-                if (dot) dot.style.opacity = "0";
                 return;
             }
 
@@ -603,14 +596,6 @@ function ProcessusPage() {
                 `translateY(calc(-50% + ${(screenY / shrink).toFixed(1)}px))` +
                 ` translateZ(${(-depth).toFixed(1)}px)` +
                 ` rotateX(${(-offset * DECK_TILT).toFixed(2)}deg)`;
-
-            // Le rail reste a plat devant la scene : il suit l'ecart vu, pas celui
-            // applique a la carte, et ne se resserre que pour la mise a l'echelle.
-            if (dot) {
-                dot.style.opacity = Math.max(0.18, opacity).toFixed(3);
-                dot.style.transform =
-                    `translate(-50%, calc(-50% + ${screenY.toFixed(1)}px)) scale(${shrink.toFixed(3)})`;
-            }
         });
     }, []);
 
@@ -701,7 +686,6 @@ function ProcessusPage() {
     useLayoutEffect(() => {
         if (!deckEnabled) {
             cardRefs.current.forEach((card) => card.removeAttribute("style"));
-            dotRefs.current.forEach((dot) => dot.removeAttribute("style"));
             return;
         }
 
@@ -993,15 +977,6 @@ function ProcessusPage() {
         return grouped;
     }, [timeline]);
 
-    const activePhaseIndex = useMemo(() => {
-        const index = phases.findIndex((phase) => phase.steps.some((entry) => entry.position === activePosition));
-        if (index >= 0) return index;
-
-        // La carte de fin, posee apres la derniere etape, appartient a la
-        // derniere phase; tout le reste retombe sur la premiere.
-        return activePosition > timeline.length ? Math.max(phases.length - 1, 0) : 0;
-    }, [phases, activePosition, timeline.length]);
-
     // On defile jusqu'a l'etape en attente des qu'une nouvelle apparait, et on
     // revient au depart quand la chronologie est remise a zero.
     useEffect(() => {
@@ -1013,35 +988,18 @@ function ProcessusPage() {
         if (currentPosition >= 1) goToPosition(currentPosition);
     }, [currentPosition, timeline.length, goToPosition]);
 
-    /**
-     * Jalons de phase, indexes par position : la premiere etape d'une phase
-     * porte le gros repere du rail.
-     *
-     * C'est ce qui permet de n'avoir qu'une seule ligne de navigation — les
-     * etapes et les phases se lisent sur le meme axe, celui du defilement,
-     * au lieu d'une barre horizontale qui deplacait la chronologie a la
-     * verticale.
+    /*
+     * Geometrie du rail. Il est fixe : les billes se repartissent une fois pour
+     * toutes sur la hauteur du cadre, du haut vers le bas, et n'obeissent plus au
+     * defilement. Le plan sur lequel elles reposent est centre, d'ou l'origine au
+     * milieu et des decalages qui vont de -h/2 a +h/2.
      */
-    const checkpoints = useMemo(() => {
-        const marks = new Map<number, { index: number; key: string; label: string }>();
+    const railHeight = deckHeight * RAIL_SPAN;
 
-        phases.forEach((phase, index) => {
-            const first = phase.steps[0];
-            if (first) marks.set(first.position, { index, key: phase.key, label: phase.label });
-        });
-
-        return marks;
-    }, [phases]);
-
-    const statusLabel = !result
-        ? mode === "review"
-            ? "Consultation"
-            : "Nouveau"
-        : result.Status === "Created"
-          ? "Processus complet"
-          : result.Status === "WaitingForSend"
-            ? "En attente d'envoi"
-            : "En attente d'une décision";
+    const railOffsetOf = (index: number) => {
+        if (slotCount <= 1) return 0;
+        return (index / (slotCount - 1) - 0.5) * railHeight;
+    };
 
     /*
      * L'ordre du document est celui de la lecture : le processus d'abord, ses
@@ -1157,15 +1115,7 @@ function ProcessusPage() {
         <div id="processusPage">
             <main className="processusStage">
                 <header className="processusStageHead">
-                    <p className="processusStageEyebrow">Processus</p>
                     <h1 className="processusStageTitle">{processCode || "Aucun processus en cours"}</h1>
-                    <span
-                        className={`processusStatus processusStatus--${
-                            isCreated ? "done" : result ? "waiting" : "idle"
-                        }`}
-                    >
-                        {statusLabel}
-                    </span>
                 </header>
 
                 {error && (
@@ -1242,55 +1192,47 @@ function ProcessusPage() {
                             }
                         >
                             {/*
-                              * Ligne de navigation unique : une bille par etape sur
-                              * l'axe du defilement, et un jalon plus gros a l'entree
-                              * de chaque phase. Cliquer amene l'etape au centre.
+                              * Ligne de navigation unique et fixe : une bille par etape,
+                              * toutes identiques. Le defilement n'y deplace rien, il ne
+                              * fait qu'y avancer le repere courant — seul ecart de
+                              * traitement, avec le nom de l'etape posee.
                               */}
                             {deckEnabled && (
-                                <nav className="processusDeckRail" aria-label="Étapes et phases">
-                                    <span className="processusDeckRailLine" aria-hidden="true" />
+                                <nav className="processusDeckRail" aria-label="Étapes du processus">
+                                    <span
+                                        className="processusDeckRailLine"
+                                        aria-hidden="true"
+                                        style={{
+                                            top: `${(-railHeight / 2).toFixed(1)}px`,
+                                            height: `${railHeight.toFixed(1)}px`,
+                                        }}
+                                    />
                                     {Array.from({ length: slotCount }, (_, index) => {
                                         const position = index + 1;
-                                        const checkpoint = checkpoints.get(position);
                                         const step = timeline[position - 1];
-                                        const isActivePhase = checkpoint?.index === activePhaseIndex;
+                                        const isActive = position === activePosition;
 
-                                        const label = checkpoint
-                                            ? `${checkpoint.key} — ${checkpoint.label}`
-                                            : step
-                                              ? `${step.code} — ${step.name}`
-                                              : "Fin du processus";
+                                        const label = step
+                                            ? `${step.code} — ${step.name}`
+                                            : "Fin du processus";
 
                                         return (
                                             <button
                                                 key={`dot-${position}`}
                                                 type="button"
-                                                ref={registerDot(position)}
                                                 className={`processusDeckDot${
-                                                    checkpoint ? " processusDeckDot--checkpoint" : ""
-                                                }${
-                                                    position === activePosition
-                                                        ? " processusDeckDot--active"
-                                                        : position === currentPosition
-                                                          ? " processusDeckDot--current"
-                                                          : position < activePosition
-                                                            ? " processusDeckDot--done"
-                                                            : ""
+                                                    isActive ? " processusDeckDot--active" : ""
                                                 }`}
+                                                style={{ top: `${railOffsetOf(index).toFixed(1)}px` }}
                                                 onClick={() => goToPosition(position)}
-                                                aria-current={position === activePosition ? "step" : undefined}
+                                                aria-current={isActive ? "step" : undefined}
                                                 aria-label={label}
                                                 title={label}
                                             >
-                                                {checkpoint && (
-                                                    <span
-                                                        className={`processusDeckDotTag${
-                                                            isActivePhase ? " processusDeckDotTag--active" : ""
-                                                        }`}
-                                                    >
-                                                        {isActivePhase
-                                                            ? `${checkpoint.key} · ${checkpoint.label}`
-                                                            : checkpoint.key}
+                                                {/* Seule l'etape posee est nommee : le rail reste lisible. */}
+                                                {isActive && (
+                                                    <span className="processusDeckDotTag">
+                                                        {step ? step.name : "Fin du processus"}
                                                     </span>
                                                 )}
                                             </button>
