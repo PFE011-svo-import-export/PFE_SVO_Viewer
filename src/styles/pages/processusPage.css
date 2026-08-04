@@ -14,14 +14,19 @@
     --done: #24631e;
 
     position: relative;
-    width: 100vw;
+    /* 100vw compte la barre de defilement : la page deborderait a l'horizontale. */
+    width: 100%;
+    /*
+     * Tout tient dans la fenetre : titre, chronologie et bandeau d'appoint.
+     * Seul le carrousel defile, a l'interieur de sa bande.
+     */
     height: 100vh;
     padding-top: 60px;
     box-sizing: border-box;
     background-color: #DDBFA3;
     color: var(--ink);
     display: flex;
-    flex-direction: row;
+    flex-direction: column;
     overflow: hidden;
 }
 
@@ -30,17 +35,107 @@
     box-sizing: border-box;
 }
 
-/* --- Colonne de gauche ---------------------------------------------------- */
+/* --- Bandeau d'informations, sous la chronologie -------------------------- */
 
+/*
+ * Portrait, avancement et historique ne servent qu'une fois le processus
+ * deroule : ils se posent apres les etapes, en trois colonnes, et ne disputent
+ * plus l'attention a la chronologie.
+ */
 .processusRail {
-    flex: 0 0 340px;
-    height: 100%;
-    overflow-y: auto;
-    padding: 24px 20px 40px;
-    border-right: 1px solid var(--line);
-    display: flex;
-    flex-direction: column;
-    gap: 18px;
+    flex: 0 0 auto;
+    width: 100%;
+    padding: 10px 40px 12px;
+    border-top: 1px solid var(--line);
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    align-items: start;
+    gap: 10px;
+}
+
+/*
+ * Densite propre au bandeau : ces panneaux sont un appoint, pas le sujet.
+ * Les reglages restent portes par .processusRail — les memes classes servent
+ * ailleurs sur la page (etat vide, panneau d'envoi), a leur taille normale.
+ */
+.processusRail .processusPanel {
+    padding: 9px 11px;
+    gap: 6px;
+}
+
+.processusRail .processusPanelTitle {
+    font-size: 10px;
+    letter-spacing: 1.2px;
+}
+
+.processusRail .processusPanelHint {
+    font-size: 10.5px;
+    line-height: 1.35;
+}
+
+/* Le portrait passe sur deux colonnes : quatre criteres empiles doubleraient
+   la hauteur du bandeau. */
+.processusRail .processusPortrait {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 5px 10px;
+}
+
+.processusRail .processusPortrait dt {
+    font-size: 9px;
+}
+
+.processusRail .processusPortrait dd {
+    margin-top: 0;
+    font-size: 11.5px;
+    line-height: 1.25;
+}
+
+.processusRail .processusStats {
+    gap: 5px 10px;
+}
+
+.processusRail .processusStats dt {
+    font-size: 9px;
+}
+
+.processusRail .processusStats dd {
+    margin-top: 0;
+    font-size: 13px;
+}
+
+.processusRail .processusSectionPip {
+    padding: 2px 0;
+    font-size: 9px;
+}
+
+.processusRail .processusList {
+    max-height: 74px;
+    gap: 3px;
+}
+
+.processusRail .processusListItem {
+    padding: 5px 8px;
+}
+
+.processusRail .processusListCode {
+    font-size: 11px;
+}
+
+.processusRail .processusListMeta {
+    font-size: 10px;
+}
+
+.processusRail .processusRailActions {
+    gap: 7px;
+    margin-top: 0;
+}
+
+.processusRail .processusPrimaryButton,
+.processusRail .processusGhostButton {
+    padding: 5px 10px;
+    font-size: 10.5px;
+    letter-spacing: 0.5px;
 }
 
 .processusPanel {
@@ -309,23 +404,27 @@
 
 /* --- Scene principale ----------------------------------------------------- */
 
-/* En-tete + barre de phases fixes, seule la colonne d'etapes defile. */
+/* Prend toute la hauteur restante : c'est la chronologie qui absorbe le jeu. */
 .processusStage {
     flex: 1 1 auto;
+    width: 100%;
     min-width: 0;
-    height: 100%;
-    overflow: hidden;
-    padding: 24px 40px 0;
+    min-height: 0;
+    padding: 14px 40px 0;
     display: flex;
     flex-direction: column;
+    overflow: hidden;
 }
 
+/* Le code du processus tient la tete de page, seul et centre. */
 .processusStageHead {
+    flex: 0 0 auto;
     display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 20px;
-    padding-bottom: 14px;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    text-align: center;
+    padding-bottom: 10px;
     border-bottom: 1px solid var(--line);
 }
 
@@ -339,9 +438,12 @@
 }
 
 .processusStageTitle {
-    font-size: 30px;
+    font-family: "Bitcount Single", sans-serif;
+    font-size: 27px;
     font-weight: 600;
-    margin: 2px 0 0;
+    letter-spacing: 1px;
+    line-height: 1.15;
+    margin: 0;
     overflow-wrap: anywhere;
 }
 
@@ -376,17 +478,14 @@
     border-left: 3px solid #7a1f12;
 }
 
-.processusNotice {
-    margin: 16px 0 0;
-    padding: 10px 14px;
-    font-size: 13px;
-    color: var(--muted);
-    background: rgba(255, 245, 245, 0.45);
-    border-left: 3px solid var(--line-strong);
-}
-
+/* La scene est bornee a la fenetre : l'etat vide se cale sans pousser dehors. */
 .processusEmpty {
-    margin-top: 22vh;
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 0;
     text-align: center;
 }
 
@@ -407,127 +506,6 @@
     margin-top: 18px;
 }
 
-/* --- Barre horizontale des phases ----------------------------------------- */
-
-.processusPhaseRail {
-    flex: 0 0 auto;
-    padding: 18px 0 14px;
-    border-bottom: 1px solid var(--line);
-}
-
-.processusPhaseHead {
-    display: flex;
-    align-items: baseline;
-    gap: 12px;
-    margin-bottom: 16px;
-    min-height: 26px;
-}
-
-.processusPhaseCounter {
-    font-family: "Bitcount Single", sans-serif;
-    font-size: 11px;
-    letter-spacing: 1.5px;
-    text-transform: uppercase;
-    color: var(--muted);
-    white-space: nowrap;
-}
-
-.processusPhaseName {
-    font-size: 20px;
-    font-weight: 600;
-    line-height: 1.2;
-}
-
-.processusPhaseTrack {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    display: flex;
-    align-items: flex-start;
-    position: relative;
-}
-
-/* Le filet passe par le centre de la zone des billes (26px de haut). */
-.processusPhaseTrack::before {
-    content: "";
-    position: absolute;
-    top: 13px;
-    left: 5%;
-    right: 5%;
-    height: 1px;
-    background: var(--line-strong);
-}
-
-.processusPhaseNode {
-    flex: 1 1 0;
-    display: flex;
-    justify-content: center;
-    position: relative;
-    z-index: 1;
-    min-width: 0;
-}
-
-.processusPhaseBall {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 6px;
-    padding: 0;
-    background: none;
-    border: none;
-    cursor: pointer;
-    color: inherit;
-}
-
-.processusPhaseDotWrap {
-    height: 26px;
-    display: flex;
-    align-items: center;
-}
-
-.processusPhaseDot {
-    width: 11px;
-    height: 11px;
-    border-radius: 50%;
-    background: #DDBFA3;
-    border: 1px solid var(--line-strong);
-    transition: width 0.32s ease, height 0.32s ease, background 0.32s, border-color 0.32s, box-shadow 0.32s;
-}
-
-.processusPhaseBall:hover .processusPhaseDot {
-    border-color: var(--brown);
-}
-
-.processusPhaseBall--done .processusPhaseDot {
-    background: var(--brown);
-    border-color: var(--brown);
-}
-
-.processusPhaseBall--active .processusPhaseDot {
-    width: 22px;
-    height: 22px;
-    background: var(--accent);
-    border-color: var(--accent);
-    box-shadow: 0 0 0 5px rgba(26, 111, 143, 0.18);
-}
-
-.processusPhaseKey {
-    font-family: "Bitcount Single", sans-serif;
-    font-size: 10px;
-    letter-spacing: 0.5px;
-    color: var(--muted);
-    white-space: nowrap;
-    transition: color 0.32s;
-}
-
-.processusPhaseBall--active .processusPhaseKey {
-    color: var(--accent);
-    font-weight: 600;
-}
-
-.processusPhaseBall--done .processusPhaseKey {
-    color: var(--ink);
-}
 
 /* --- Chronologie : un carrousel 3D, une etape a la fois ------------------- */
 
@@ -545,6 +523,8 @@
  */
 .processusSteps--deck {
     --deck-perspective: 1400px;
+    /* Le cadre prend la hauteur laissee par le titre et le bandeau : rien ne
+       depasse de la fenetre, et le defilement reste confine au carrousel. */
     scroll-snap-type: y mandatory;
     overscroll-behavior: contain;
     scrollbar-width: none;
@@ -595,14 +575,19 @@
     perspective-origin: 50% 0;
 }
 
-/* Rail : le filet vertical et ses billes restent a plat devant la scene. */
+/*
+ * Rail unique : le filet vertical, ses billes d'etape et ses jalons de phase
+ * restent a plat devant la scene. Une seule ligne porte donc les deux niveaux
+ * de navigation, sur l'axe meme du defilement.
+ */
 .processusDeckRail {
     position: absolute;
     top: 0;
-    left: 12px;
+    left: 26px;
     width: 0;
     height: 0;
     z-index: 120;
+    /* Le rail ne capte rien : seules ses billes sont cliquables. */
     pointer-events: none;
 }
 
@@ -621,10 +606,25 @@
     left: 0;
     width: 10px;
     height: 10px;
+    padding: 0;
     border-radius: 50%;
     background: #DDBFA3;
     border: 1px solid var(--line-strong);
+    cursor: pointer;
+    pointer-events: auto;
+    /* L'etiquette est posee hors de la bille : le bouton ne doit pas la rogner. */
+    overflow: visible;
     transition: width 0.32s ease, height 0.32s ease, background 0.32s, border-color 0.32s, box-shadow 0.32s;
+}
+
+.processusDeckDot:hover {
+    border-color: var(--brown);
+    box-shadow: 0 0 0 4px rgba(68, 50, 35, 0.14);
+}
+
+.processusDeckDot:focus-visible {
+    outline: 1px solid var(--brown);
+    outline-offset: 3px;
 }
 
 .processusDeckDot--done {
@@ -645,6 +645,45 @@
     box-shadow: 0 0 0 5px rgba(26, 111, 143, 0.18);
 }
 
+/* Jalon de phase : la meme ligne, une bille plus grosse. */
+.processusDeckDot--checkpoint {
+    width: 20px;
+    height: 20px;
+    border-width: 2px;
+    border-color: var(--brown);
+}
+
+.processusDeckDot--checkpoint.processusDeckDot--active {
+    width: 28px;
+    height: 28px;
+}
+
+/* Etiquette du jalon : posee a cote de la bille, sans peser sur sa boite. */
+.processusDeckDotTag {
+    position: absolute;
+    left: calc(100% + 11px);
+    top: 50%;
+    transform: translateY(-50%);
+    font-family: "Bitcount Single", sans-serif;
+    font-size: 10px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--muted);
+    pointer-events: none;
+    transition: color 0.32s;
+
+    /* Tient dans la gouttiere : le libelle complet reste dans l'infobulle. */
+    max-width: 148px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.processusDeckDotTag--active {
+    color: var(--accent);
+    font-weight: 600;
+}
+
 /* --- Cartes du carrousel -------------------------------------------------- */
 
 .processusDeckCard {
@@ -655,7 +694,8 @@
 .processusSteps--deck .processusDeckCard {
     position: absolute;
     top: 0;
-    left: 40px;
+    /* Gouttiere de navigation : le rail et les etiquettes de phase y logent. */
+    left: 210px;
     right: 12px;
     max-width: 1120px;
     margin: 0;
@@ -1188,27 +1228,60 @@
     margin: 0;
 }
 
+/* --- Repere de phase dans le flux (ecrans etroits) ------------------------ */
+
+/*
+ * Sans carrousel il n'y a pas de rail : l'entree de phase se lit alors dans la
+ * chronologie elle-meme, pour ne pas perdre ce niveau de reperage.
+ */
+.processusPhaseMark {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 22px 0 10px;
+    font-family: "Bitcount Single", sans-serif;
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--muted);
+}
+
+.processusPhaseMark::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: var(--line);
+}
+
+.processusPhaseMarkKey {
+    padding: 3px 9px;
+    color: #fff5f5;
+    background: var(--brown);
+    letter-spacing: 1px;
+}
+
 /* --- Ecrans etroits ------------------------------------------------------- */
 
 @media (max-width: 1024px) {
+    /*
+     * Sans carrousel la chronologie est une liste : elle ne peut pas tenir dans
+     * la fenetre, la page reprend donc son defilement.
+     */
     #processusPage {
-        flex-direction: column;
-        overflow-y: auto;
+        height: auto;
+        min-height: 100vh;
+        overflow: visible;
     }
 
     .processusRail {
-        flex: 0 0 auto;
-        width: 100%;
-        height: auto;
-        overflow: visible;
-        border-right: none;
-        border-bottom: 1px solid var(--line);
+        padding: 20px 20px 48px;
+        grid-template-columns: 1fr;
     }
 
     .processusStage {
-        height: auto;
+        flex: 0 0 auto;
         overflow: visible;
-        padding: 20px 20px 60px;
+        padding: 16px 20px 20px;
     }
 
     /* Sur petit ecran la page entiere defile : ni carrousel, ni mise en retrait. */
@@ -1235,10 +1308,6 @@
 
     .processusStep:not(.processusStep--active) .processusStepBody {
         pointer-events: auto;
-    }
-
-    .processusPhaseKey {
-        display: none;
     }
 
     .processusDecision,

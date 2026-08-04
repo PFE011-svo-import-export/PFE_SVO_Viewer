@@ -1,4 +1,5 @@
 import {
+    Fragment,
     useCallback,
     useEffect,
     useLayoutEffect,
@@ -548,7 +549,7 @@ function ProcessusPage() {
         else cardRefs.current.delete(position);
     };
 
-    const registerDot = (position: number) => (element: HTMLSpanElement | null) => {
+    const registerDot = (position: number) => (element: HTMLElement | null) => {
         if (element) dotRefs.current.set(position, element);
         else dotRefs.current.delete(position);
     };
@@ -1012,10 +1013,25 @@ function ProcessusPage() {
         if (currentPosition >= 1) goToPosition(currentPosition);
     }, [currentPosition, timeline.length, goToPosition]);
 
-    const goToPhase = (index: number) => {
-        const first = phases[index]?.steps[0];
-        if (first) goToPosition(first.position);
-    };
+    /**
+     * Jalons de phase, indexes par position : la premiere etape d'une phase
+     * porte le gros repere du rail.
+     *
+     * C'est ce qui permet de n'avoir qu'une seule ligne de navigation — les
+     * etapes et les phases se lisent sur le meme axe, celui du defilement,
+     * au lieu d'une barre horizontale qui deplacait la chronologie a la
+     * verticale.
+     */
+    const checkpoints = useMemo(() => {
+        const marks = new Map<number, { index: number; key: string; label: string }>();
+
+        phases.forEach((phase, index) => {
+            const first = phase.steps[0];
+            if (first) marks.set(first.position, { index, key: phase.key, label: phase.label });
+        });
+
+        return marks;
+    }, [phases]);
 
     const statusLabel = !result
         ? mode === "review"
@@ -1027,116 +1043,122 @@ function ProcessusPage() {
             ? "En attente d'envoi"
             : "En attente d'une décision";
 
-    return (
-        <div id="processusPage">
-            <aside className="processusRail">
-                <section className="processusPanel">
-                    <h2 className="processusPanelTitle">Portrait</h2>
+    /*
+     * L'ordre du document est celui de la lecture : le processus d'abord, ses
+     * a-cotes ensuite. Le portrait, l'avancement et l'historique ne se
+     * consultent qu'une fois le processus deroule — ils vivent donc sous la
+     * chronologie, atteints en poursuivant le defilement.
+     */
+    const asideInfo = (
+        <aside className="processusRail">
+            <section className="processusPanel">
+                <h2 className="processusPanelTitle">Portrait</h2>
 
-                    {portraitEntries ? (
-                        <PortraitPanel entries={portraitEntries} />
-                    ) : (
-                        <p className="processusPanelHint">
-                            Aucun critère sélectionné. Choisissez-les sur la page d'accueil, puis lancez la
-                            simulation.
-                        </p>
-                    )}
-
-                    <div className="processusRailActions">
-                        <Link to="/" className="processusGhostButton processusLinkButton">
-                            {portraitEntries ? "Changer les critères" : "Choisir les critères"}
-                        </Link>
-                        {urlCriteria && (
-                            <button
-                                type="button"
-                                className="processusPrimaryButton"
-                                onClick={() => startBuild(urlCriteria)}
-                                disabled={busy !== ""}
-                            >
-                                {busy === "start" ? "Assemblage…" : "Relancer ►"}
-                            </button>
-                        )}
-                    </div>
-                </section>
-
-                {timeline.length > 0 && (
-                    <section className="processusPanel">
-                        <h2 className="processusPanelTitle">Avancement</h2>
-                        <dl className="processusStats">
-                            <div>
-                                <dt>Étapes</dt>
-                                <dd>{timeline.length}</dd>
-                            </div>
-                            <div>
-                                <dt>Phases</dt>
-                                <dd>{stats.phases}</dd>
-                            </div>
-                            <div>
-                                <dt>Sections</dt>
-                                <dd>{stats.sections} / 5</dd>
-                            </div>
-                            <div>
-                                <dt>Coût cumulé</dt>
-                                <dd>{formatPrice(stats.price)}</dd>
-                            </div>
-                        </dl>
-
-                        <ul className="processusSectionTrack">
-                            {SECTIONS.map((section, index) => (
-                                <li
-                                    key={section.letter}
-                                    className={`processusSectionPip${
-                                        index < stats.sections
-                                            ? " processusSectionPip--done"
-                                            : index === stats.sections && !isCreated
-                                              ? " processusSectionPip--active"
-                                              : ""
-                                    }`}
-                                    title={section.label}
-                                >
-                                    {section.letter}
-                                </li>
-                            ))}
-                        </ul>
-                    </section>
+                {portraitEntries ? (
+                    <PortraitPanel entries={portraitEntries} />
+                ) : (
+                    <p className="processusPanelHint">
+                        Aucun critère sélectionné. Choisissez-les sur la page d'accueil, puis lancez la
+                        simulation.
+                    </p>
                 )}
 
-                <section className="processusPanel">
-                    <h2 className="processusPanelTitle">Processus enregistrés</h2>
-                    {processes.length === 0 ? (
-                        <p className="processusPanelHint">Aucun processus enregistré pour le moment.</p>
-                    ) : (
-                        <ul className="processusList">
-                            {[...processes].reverse().map((record) => (
-                                <li key={record.id}>
-                                    <button
-                                        type="button"
-                                        className={`processusListItem${
-                                            processCode === record.code && mode === "review"
-                                                ? " processusListItem--active"
-                                                : ""
-                                        }`}
-                                        onClick={() => handleOpen(record)}
-                                        disabled={busy !== ""}
-                                    >
-                                        <span className="processusListCode">{record.code}</span>
-                                        <span className="processusListMeta">
-                                            #{record.id} · {record.status}
-                                        </span>
-                                    </button>
-                                </li>
-                            ))}
-                        </ul>
+                <div className="processusRailActions">
+                    <Link to="/" className="processusGhostButton processusLinkButton">
+                        {portraitEntries ? "Changer les critères" : "Choisir les critères"}
+                    </Link>
+                    {urlCriteria && (
+                        <button
+                            type="button"
+                            className="processusPrimaryButton"
+                            onClick={() => startBuild(urlCriteria)}
+                            disabled={busy !== ""}
+                        >
+                            {busy === "start" ? "Assemblage…" : "Relancer ►"}
+                        </button>
                     )}
-                </section>
-            </aside>
+                </div>
+            </section>
 
+            {timeline.length > 0 && (
+                <section className="processusPanel">
+                    <h2 className="processusPanelTitle">Avancement</h2>
+                    <dl className="processusStats">
+                        <div>
+                            <dt>Étapes</dt>
+                            <dd>{timeline.length}</dd>
+                        </div>
+                        <div>
+                            <dt>Phases</dt>
+                            <dd>{stats.phases}</dd>
+                        </div>
+                        <div>
+                            <dt>Sections</dt>
+                            <dd>{stats.sections} / 5</dd>
+                        </div>
+                        <div>
+                            <dt>Coût cumulé</dt>
+                            <dd>{formatPrice(stats.price)}</dd>
+                        </div>
+                    </dl>
+
+                    <ul className="processusSectionTrack">
+                        {SECTIONS.map((section, index) => (
+                            <li
+                                key={section.letter}
+                                className={`processusSectionPip${
+                                    index < stats.sections
+                                        ? " processusSectionPip--done"
+                                        : index === stats.sections && !isCreated
+                                          ? " processusSectionPip--active"
+                                          : ""
+                                }`}
+                                title={section.label}
+                            >
+                                {section.letter}
+                            </li>
+                        ))}
+                    </ul>
+                </section>
+            )}
+
+            <section className="processusPanel">
+                <h2 className="processusPanelTitle">Processus enregistrés</h2>
+                {processes.length === 0 ? (
+                    <p className="processusPanelHint">Aucun processus enregistré pour le moment.</p>
+                ) : (
+                    <ul className="processusList">
+                        {[...processes].reverse().map((record) => (
+                            <li key={record.id}>
+                                <button
+                                    type="button"
+                                    className={`processusListItem${
+                                        processCode === record.code && mode === "review"
+                                            ? " processusListItem--active"
+                                            : ""
+                                    }`}
+                                    onClick={() => handleOpen(record)}
+                                    disabled={busy !== ""}
+                                >
+                                    <span className="processusListCode">{record.code}</span>
+                                    <span className="processusListMeta">
+                                        #{record.id} · {record.status}
+                                    </span>
+                                </button>
+                            </li>
+                        ))}
+                    </ul>
+                )}
+            </section>
+        </aside>
+    );
+
+    return (
+        <div id="processusPage">
             <main className="processusStage">
                 <header className="processusStageHead">
-                    <div>
-                        <p className="processusStageEyebrow">Processus</p>
-                        <h1 className="processusStageTitle">{processCode || "Aucun processus en cours"}</h1>
-                    </div>
+                    <p className="processusStageEyebrow">Processus</p>
+                    <h1 className="processusStageTitle">{processCode || "Aucun processus en cours"}</h1>
                     <span
                         className={`processusStatus processusStatus--${
                             isCreated ? "done" : result ? "waiting" : "idle"
@@ -1149,13 +1171,6 @@ function ProcessusPage() {
                 {error && (
                     <p className="processusError" role="alert">
                         {error}
-                    </p>
-                )}
-
-                {mode === "review" && timeline.length > 0 && (
-                    <p className="processusNotice">
-                        Consultation d'un processus enregistré. Pour en construire un nouveau, repassez par les
-                        critères de la page d'accueil.
                     </p>
                 )}
 
@@ -1181,45 +1196,9 @@ function ProcessusPage() {
                     </div>
                 )}
 
-                {phases.length > 0 && (
-                    <nav className="processusPhaseRail" aria-label="Phases du processus">
-                        <div className="processusPhaseHead">
-                            <span className="processusPhaseCounter">
-                                Phase {activePhaseIndex + 1} / {phases.length}
-                            </span>
-                            <span className="processusPhaseName">{phases[activePhaseIndex]?.label}</span>
-                        </div>
-
-                        <ol className="processusPhaseTrack">
-                            {phases.map((phase, index) => (
-                                <li key={phase.key} className="processusPhaseNode">
-                                    <button
-                                        type="button"
-                                        className={`processusPhaseBall${
-                                            index < activePhaseIndex
-                                                ? " processusPhaseBall--done"
-                                                : index === activePhaseIndex
-                                                  ? " processusPhaseBall--active"
-                                                  : ""
-                                        }`}
-                                        onClick={() => goToPhase(index)}
-                                        aria-current={index === activePhaseIndex ? "step" : undefined}
-                                        aria-label={`${phase.key} — ${phase.label}`}
-                                        title={phase.label}
-                                    >
-                                        <span className="processusPhaseDotWrap">
-                                            <span className="processusPhaseDot" />
-                                        </span>
-                                        <span className="processusPhaseKey">{phase.key}</span>
-                                    </button>
-                                </li>
-                            ))}
-                        </ol>
-                    </nav>
-                )}
-
+                {/* Sans etape, la bande du carrousel ne reserve pas sa hauteur. */}
                 <div
-                    className={`processusSteps${deckEnabled ? " processusSteps--deck" : ""}`}
+                    className={`processusSteps${deckEnabled && slotCount > 0 ? " processusSteps--deck" : ""}`}
                     ref={deckScrollRef}
                     onScroll={deckEnabled ? handleDeckScroll : undefined}
                     onKeyDown={deckEnabled ? handleDeckKeys : undefined}
@@ -1262,17 +1241,34 @@ function ProcessusPage() {
                                     : undefined
                             }
                         >
+                            {/*
+                              * Ligne de navigation unique : une bille par etape sur
+                              * l'axe du defilement, et un jalon plus gros a l'entree
+                              * de chaque phase. Cliquer amene l'etape au centre.
+                              */}
                             {deckEnabled && (
-                                <div className="processusDeckRail" aria-hidden="true">
-                                    <span className="processusDeckRailLine" />
+                                <nav className="processusDeckRail" aria-label="Étapes et phases">
+                                    <span className="processusDeckRailLine" aria-hidden="true" />
                                     {Array.from({ length: slotCount }, (_, index) => {
                                         const position = index + 1;
+                                        const checkpoint = checkpoints.get(position);
+                                        const step = timeline[position - 1];
+                                        const isActivePhase = checkpoint?.index === activePhaseIndex;
+
+                                        const label = checkpoint
+                                            ? `${checkpoint.key} — ${checkpoint.label}`
+                                            : step
+                                              ? `${step.code} — ${step.name}`
+                                              : "Fin du processus";
 
                                         return (
-                                            <span
+                                            <button
                                                 key={`dot-${position}`}
+                                                type="button"
                                                 ref={registerDot(position)}
                                                 className={`processusDeckDot${
+                                                    checkpoint ? " processusDeckDot--checkpoint" : ""
+                                                }${
                                                     position === activePosition
                                                         ? " processusDeckDot--active"
                                                         : position === currentPosition
@@ -1281,14 +1277,42 @@ function ProcessusPage() {
                                                             ? " processusDeckDot--done"
                                                             : ""
                                                 }`}
-                                            />
+                                                onClick={() => goToPosition(position)}
+                                                aria-current={position === activePosition ? "step" : undefined}
+                                                aria-label={label}
+                                                title={label}
+                                            >
+                                                {checkpoint && (
+                                                    <span
+                                                        className={`processusDeckDotTag${
+                                                            isActivePhase ? " processusDeckDotTag--active" : ""
+                                                        }`}
+                                                    >
+                                                        {isActivePhase
+                                                            ? `${checkpoint.key} · ${checkpoint.label}`
+                                                            : checkpoint.key}
+                                                    </span>
+                                                )}
+                                            </button>
                                         );
                                     })}
-                                </div>
+                                </nav>
                             )}
 
-                            {phases.map((phase) =>
-                                phase.steps.map(({ step, position }) => {
+                            {phases.map((phase, phaseIndex) => (
+                                <Fragment key={`${phase.key}-${phaseIndex}`}>
+                                    {/*
+                                      * En liste (ecran etroit) il n'y a pas de rail :
+                                      * le repere de phase revient dans le flux.
+                                      */}
+                                    {!deckEnabled && (
+                                        <p className="processusPhaseMark">
+                                            <span className="processusPhaseMarkKey">{phase.key}</span>
+                                            {phase.label}
+                                        </p>
+                                    )}
+
+                                    {phase.steps.map(({ step, position }) => {
                                     const isCurrent = position === currentPosition;
 
                                     return (
@@ -1330,8 +1354,9 @@ function ProcessusPage() {
                                             )}
                                         </div>
                                     );
-                                }),
-                            )}
+                                    })}
+                                </Fragment>
+                            ))}
 
                             {/* La fin de processus occupe le dernier cran de la course. */}
                             {doneResult && (
@@ -1357,6 +1382,8 @@ function ProcessusPage() {
                     </div>
                 </div>
             </main>
+
+            {asideInfo}
         </div>
     );
 }

@@ -3,3 +3,18 @@
   padding: 0;
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/*
+ * Defilement sans barre visible, partout dans l'application.
+ * Seule l'indication disparait : molette, pave tactile, clavier et defilement
+ * programme (scrollTo) continuent de fonctionner normalement.
+ */
+*{
+  scrollbar-width: none;      /* Firefox */
+  -ms-overflow-style: none;   /* Edge historique */
+}
+
+*::-webkit-scrollbar{
+  width: 0;
+  height: 0;
+}
