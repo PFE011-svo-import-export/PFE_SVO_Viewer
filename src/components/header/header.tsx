@@ -43,19 +43,35 @@ function HeaderTab({ title, to }: { title: string; to: string }) {
 }
 
 function HeaderTabHolder() {
-    const { isAuthenticated } = useAuth();
+    const { role, isAuthenticated } = useAuth();
     return (
         <div className="headerTabHolder">
-            <HeaderTab title="CAFÉ" to="/simulation" />
-            <HeaderTab title="CAPD" to="/info" />
-            {/* Onglet visible uniquement apres connexion */}
+            {/* Onglets visibles uniquement apres connexion */}
             {isAuthenticated && <HeaderTab title="Processus" to="/processus" />}
+            {/* Gabarit des etapes : reserve au personnel (Admin / CAPD) */}
+            {(role === "Admin" || role === "CAPD") && <HeaderTab title="Étapes" to="/steps" />}
+            {/* Gestion des comptes : reservee aux administrateurs */}
+            {role === "Admin" && <HeaderTab title="Utilisateurs" to="/utilisateurs" />}
         </div>
     )
 }
 
+/**
+ * Initiales tirees de l'email : "jane.doe@capd.ca" -> "JD".
+ * Renvoie "" quand rien d'exploitable n'est disponible (l'appelant retombe
+ * alors sur le role).
+ */
+function initialsFrom(email: string): string {
+    const local = email.split("@")[0] ?? "";
+    const parts = local.split(/[._\-+]+/).filter(Boolean);
+
+    if (parts.length === 0) return "";
+    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+    return (parts[0][0] + parts[1][0]).toUpperCase();
+}
+
 function HeaderAccountSection() {
-    const { role, isAuthenticated, logout } = useAuth();
+    const { role, email, isAuthenticated, logout } = useAuth();
     const navigate = useNavigate();
 
     const handleLogout = () => {
@@ -63,14 +79,18 @@ function HeaderAccountSection() {
         navigate("/");
     };
 
+    // Une session ouverte avant la memorisation de l'email n'en a pas : le role
+    // fait alors office de pastille.
+    const initials = initialsFrom(email) || role.slice(0, 2).toUpperCase() || "?";
+
     return (
         <div className="headerAccountSection">
             {isAuthenticated ? (
                 <>
                     {/* Acces au profil de l'utilisateur connecte */}
-                    <NavLink to="/profile" className="headerProfileLink">
+                    <NavLink to="/profile" className="headerProfileLink" title={email || role}>
                         <p id="headerAccountSectionName">{role}</p>
-                        <div id="headerAccountSectionPlaceHolder"></div>
+                        <div className="headerAvatar" aria-hidden="true">{initials}</div>
                     </NavLink>
                     <button className="headerAuthButton" onClick={handleLogout}>Logout</button>
                 </>
@@ -84,7 +104,7 @@ function HeaderAccountSection() {
 function Header() {
     return (
         <div id="header">
-            <HeaderLogo title="Simulateur" />
+            <HeaderLogo title="Carnet d'opération" />
             <HeaderTabHolder />
             <HeaderAccountSection />
         </div>

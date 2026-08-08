@@ -8,7 +8,8 @@
     top: 0;
     z-index: 100;
 
-    width: 100vw;
+    /* Element fixe : 100% se lit sur la fenetre, sans la barre de defilement. */
+    width: 100%;
     height: 60px;
 
     display: flex;
@@ -57,32 +58,65 @@
     z-index: 1;
     background-color: antiquewhite;
     display: flex;
-    align-items: flex-end;
+    /* Centre : la pastille est ronde, elle se lit mal collee au bas de la barre. */
+    align-items: center;
     justify-content: center;
     height: 100%;
+    padding: 0 6px;
 }
 
 .headerProfileLink{
     display: flex;
     align-items: center;
+    gap: 12px;
     cursor: pointer;
     text-decoration: none;
     color: inherit;
 }
 
 #headerAccountSectionName{
-    padding-right: 40px;
+    font-size: 14px;
+    letter-spacing: 0.5px;
+    color: #443223;
 }
 
 .headerAuthButton{
-    margin: 0 16px;
+    margin: 0 12px;
     cursor: pointer;
 }
 
-#headerAccountSectionPlaceHolder{
-    background-color: blue;
-    border-radius: 60px;
+/* Pastille du compte : initiales sur fond d'encre brune, dans la meme palette
+   que les pages Processus / Utilisateurs. */
+.headerAvatar{
+    flex: 0 0 auto;
+    height: 38px;
+    width: 38px;
+    border-radius: 50%;
 
-    height: 50px;
-    width: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background: #443223;
+    color: #fff5f5;
+    border: 1px solid rgba(255, 245, 245, 0.5);
+    box-shadow: 0 2px 6px rgba(43, 33, 24, 0.3);
+
+    font-size: 14px;
+    letter-spacing: 1px;
+    line-height: 1;
+    user-select: none;
+
+    transition: background 0.25s, transform 0.25s, box-shadow 0.25s;
+}
+
+.headerProfileLink:hover .headerAvatar{
+    background: #2b2118;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 11px rgba(43, 33, 24, 0.38);
+}
+
+.headerProfileLink:focus-visible{
+    outline: 1px solid #443223;
+    outline-offset: 3px;
 }

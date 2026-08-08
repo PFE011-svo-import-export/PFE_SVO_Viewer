@@ -1,0 +1,446 @@
+/* Page "Utilisateurs" — gestion des comptes.
+   Meme grammaire visuelle que la page Processus : fond sable #DDBFA3, encre
+   brune #443223, Playfair Display pour le texte et Bitcount Single pour les
+   etiquettes et les boutons. */
+
+#usersPage {
+    --ink: #2b2118;
+    --brown: #443223;
+    --line: rgba(68, 50, 35, 0.26);
+    --line-strong: rgba(68, 50, 35, 0.5);
+    --panel: rgba(255, 245, 245, 0.38);
+    --panel-solid: rgba(255, 245, 245, 0.72);
+    --muted: rgba(43, 33, 24, 0.62);
+    --accent: #1a6f8f;
+    --done: #24631e;
+    --danger: #7a1f12;
+
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    padding-top: 60px;
+    box-sizing: border-box;
+    background-color: #DDBFA3;
+    color: var(--ink);
+    display: flex;
+    flex-direction: row;
+    overflow: hidden;
+}
+
+#usersPage * {
+    font-family: "Playfair Display", serif;
+    box-sizing: border-box;
+}
+
+/* --- Colonne de gauche : le formulaire ------------------------------------ */
+
+.usersRail {
+    flex: 0 0 340px;
+    height: 100%;
+    overflow-y: auto;
+    padding: 24px 20px 40px;
+    border-right: 1px solid var(--line);
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.usersPanel {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.usersPanelTitle {
+    font-family: "Bitcount Single", sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin: 0;
+}
+
+.usersPanelHint {
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--muted);
+    margin: 0;
+}
+
+.usersForm {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* --- Champs --------------------------------------------------------------- */
+
+.usersField {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    min-width: 0;
+}
+
+.usersFieldLabel {
+    font-family: "Bitcount Single", sans-serif;
+    font-size: 11px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--muted);
+}
+
+.usersInput {
+    width: 100%;
+    padding: 8px 10px;
+    font-size: 13px;
+    color: inherit;
+    background: rgba(255, 245, 245, 0.55);
+    border: 1px solid var(--line);
+    border-radius: 0;
+    text-align: left;
+    transition: border-color 0.2s, background 0.2s;
+}
+
+.usersInput:hover:not(:disabled) {
+    background: rgba(255, 245, 245, 0.8);
+}
+
+.usersInput:focus-visible {
+    outline: none;
+    border-color: var(--brown);
+}
+
+.usersInput::placeholder {
+    color: rgba(43, 33, 24, 0.4);
+    font-style: italic;
+}
+
+/* --- Choix du role : deux pastilles exclusives ---------------------------- */
+
+.usersRoleChoice {
+    display: flex;
+    gap: 8px;
+}
+
+.usersRoleOption {
+    flex: 1;
+    padding: 8px 0;
+    font-family: "Bitcount Single", sans-serif;
+    font-size: 12px;
+    letter-spacing: 1px;
+    color: var(--muted);
+    background: transparent;
+    border: 1px solid var(--line-strong);
+    cursor: pointer;
+    transition: background 0.25s, color 0.25s, border-color 0.25s;
+}
+
+.usersRoleOption:hover {
+    border-color: var(--brown);
+    color: var(--ink);
+}
+
+.usersRoleOption--picked {
+    background: var(--brown);
+    border-color: var(--brown);
+    color: #fff5f5;
+}
+
+/* --- Boutons -------------------------------------------------------------- */
+
+.usersFormActions {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 4px;
+}
+
+.usersPrimaryButton {
+    font-family: "Bitcount Single", sans-serif;
+    font-size: 13px;
+    letter-spacing: 1px;
+    padding: 9px 18px;
+    color: #fff5f5;
+    background: var(--brown);
+    border: 1px solid var(--brown);
+    cursor: pointer;
+    transition: transform 0.25s, background 0.25s, color 0.25s;
+}
+
+.usersPrimaryButton:hover:not(:disabled) {
+    background: var(--ink);
+    transform: skew(-8deg);
+}
+
+.usersPrimaryButton:disabled {
+    opacity: 0.4;
+    cursor: default;
+}
+
+.usersGhostButton {
+    font-family: "Bitcount Single", sans-serif;
+    font-size: 12px;
+    letter-spacing: 0.5px;
+    padding: 8px 12px;
+    color: var(--brown);
+    background: transparent;
+    border: 1px solid var(--line-strong);
+    cursor: pointer;
+    transition: background 0.25s, color 0.25s, border-color 0.25s;
+}
+
+.usersGhostButton:hover:not(:disabled) {
+    background: var(--brown);
+    color: #fff5f5;
+}
+
+.usersGhostButton:disabled {
+    opacity: 0.4;
+    cursor: default;
+}
+
+.usersGhostButton--danger:hover:not(:disabled) {
+    background: var(--danger);
+    border-color: var(--danger);
+}
+
+.usersDangerButton {
+    font-family: "Bitcount Single", sans-serif;
+    font-size: 12px;
+    letter-spacing: 0.5px;
+    padding: 8px 12px;
+    color: #fff5f5;
+    background: var(--danger);
+    border: 1px solid var(--danger);
+    cursor: pointer;
+    transition: transform 0.25s;
+}
+
+.usersDangerButton:hover {
+    transform: skew(-8deg);
+}
+
+/* --- Scene principale : la liste ------------------------------------------ */
+
+.usersStage {
+    flex: 1 1 auto;
+    min-width: 0;
+    height: 100%;
+    overflow-y: auto;
+    padding: 24px 40px 40px;
+    display: flex;
+    flex-direction: column;
+}
+
+.usersStageHead {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 20px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--line);
+}
+
+.usersStageEyebrow {
+    font-family: "Bitcount Single", sans-serif;
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0;
+}
+
+.usersStageTitle {
+    font-size: 30px;
+    font-weight: 600;
+    margin: 2px 0 0;
+}
+
+.usersCount {
+    flex: 0 0 auto;
+    font-family: "Bitcount Single", sans-serif;
+    font-size: 11px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 6px 12px;
+    border: 1px solid var(--line-strong);
+    white-space: nowrap;
+}
+
+/* --- Messages ------------------------------------------------------------- */
+
+.usersError {
+    margin: 0;
+    padding: 10px 14px;
+    font-size: 13px;
+    color: var(--danger);
+    background: rgba(122, 31, 18, 0.1);
+    border-left: 3px solid var(--danger);
+}
+
+.usersError--stage {
+    margin-top: 16px;
+}
+
+.usersNotice {
+    margin: 16px 0 0;
+    padding: 10px 14px;
+    font-size: 13px;
+    color: var(--done);
+    background: rgba(36, 99, 30, 0.1);
+    border-left: 3px solid var(--done);
+}
+
+.usersPlaceholder {
+    margin-top: 18vh;
+    text-align: center;
+    font-size: 14px;
+    color: var(--muted);
+}
+
+/* --- Lignes de la liste --------------------------------------------------- */
+
+.usersList {
+    list-style: none;
+    margin: 18px 0 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.usersRow {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 12px 14px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    transition: background 0.2s, border-color 0.2s;
+}
+
+.usersRow:hover {
+    background: var(--panel-solid);
+    border-color: var(--line-strong);
+}
+
+.usersRow--editing {
+    background: var(--panel-solid);
+    border-color: var(--accent);
+}
+
+.usersRowIdentity {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.usersRowName {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 1.3;
+    overflow-wrap: anywhere;
+}
+
+.usersSelfTag {
+    font-family: "Bitcount Single", sans-serif;
+    font-size: 9px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 2px 6px;
+    color: var(--accent);
+    border: 1px solid var(--accent);
+}
+
+.usersRowEmail {
+    font-family: "Bitcount Single", sans-serif;
+    font-size: 11px;
+    letter-spacing: 0.5px;
+    color: var(--muted);
+    overflow-wrap: anywhere;
+}
+
+.usersTag {
+    flex: 0 0 auto;
+    font-family: "Bitcount Single", sans-serif;
+    font-size: 10px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    padding: 3px 9px;
+    border: 1px solid var(--line-strong);
+    color: var(--muted);
+}
+
+.usersTag--admin {
+    border-color: var(--brown);
+    background: var(--brown);
+    color: #fff5f5;
+}
+
+.usersTag--capd {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+.usersRowActions {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.usersConfirmLabel {
+    font-family: "Bitcount Single", sans-serif;
+    font-size: 11px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--danger);
+}
+
+/* --- Ecrans etroits ------------------------------------------------------- */
+
+@media (max-width: 1024px) {
+    #usersPage {
+        flex-direction: column;
+        overflow-y: auto;
+    }
+
+    .usersRail {
+        flex: 0 0 auto;
+        width: 100%;
+        height: auto;
+        overflow: visible;
+        border-right: none;
+        border-bottom: 1px solid var(--line);
+    }
+
+    .usersStage {
+        height: auto;
+        overflow: visible;
+        padding: 20px 20px 60px;
+    }
+
+    .usersRow {
+        flex-wrap: wrap;
+        align-items: flex-start;
+    }
+
+    .usersRowActions {
+        width: 100%;
+        justify-content: flex-end;
+    }
+
+    .usersPlaceholder {
+        margin-top: 40px;
+    }
+}

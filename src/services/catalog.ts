@@ -1,4 +1,3 @@
-
 const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:5294";
 
 /** Pays renvoyé par GET /countries (cf. CountryDto). */
@@ -59,5 +58,5 @@ export function getIncoterms(): Promise<Incoterm[]> {
 }
 
 export function getMerchandise(): Promise<Merchandise[]> {
-    return getJson<Merchandise[]>("/merchandise/catalog");
+    return getJson<Merchandise[]>("/merchandise");
 }

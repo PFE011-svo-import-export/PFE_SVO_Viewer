@@ -1,9 +1,23 @@
 #app{
   background-color: rgba(10,1,10,0.3);
-  height: 100vh;
-  width: 100vw;
+  /*
+   * min-height, pas height : une page plus haute que la fenetre (Processus)
+   * fait grandir le conteneur. A hauteur fixe, justify-content: center
+   * repousserait son haut au-dessus du bord, hors d'atteinte du defilement.
+   */
+  min-height: 100vh;
+  /* 100vw compte la barre de defilement : la largeur deborderait d'autant. */
+  width: 100%;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
+}
+
+/*
+ * align-items: center laisse les enfants a la largeur de leur contenu : sans
+ * cette regle, une page en width: 100% se replierait sur elle-meme.
+ */
+#app > main{
+  width: 100%;
 }

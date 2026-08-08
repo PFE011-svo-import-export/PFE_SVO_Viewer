@@ -1,4 +1,4 @@
-import { Navigate, Outlet } from "react-router-dom";
+import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import type { UserRole } from "../services/auth";
 
@@ -13,9 +13,11 @@ import type { UserRole } from "../services/auth";
  */
 export default function ProtectedRoute({ allowedRoles }: { allowedRoles?: UserRole[] }) {
     const { role, isAuthenticated } = useAuth();
+    const location = useLocation();
 
     if (!isAuthenticated) {
-        return <Navigate to="/login" replace />;
+        // On memorise la destination (query comprise) pour y revenir apres login.
+        return <Navigate to="/login" replace state={{ from: location }} />;
     }
 
     if (allowedRoles && !allowedRoles.includes(role)) {

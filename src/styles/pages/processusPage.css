@@ -1,3 +1,1468 @@
+/* Page "Processus" — construction pas a pas.
+   Palette et typographies alignees sur le reste du viewer :
+   fond sable #DDBFA3, encre brune #443223, Playfair Display / Bitcount Single. */
+
 #processusPage {
-    padding: 80px 40px;
+    --ink: #2b2118;
+    --brown: #443223;
+    --line: rgba(68, 50, 35, 0.26);
+    --line-strong: rgba(68, 50, 35, 0.5);
+    --panel: rgba(255, 245, 245, 0.38);
+    --panel-solid: rgba(255, 245, 245, 0.72);
+    --muted: rgba(43, 33, 24, 0.62);
+    --accent: #1a6f8f;
+    --done: #24631e;
+
+    /*
+     * Gouttiere de navigation, de gauche a droite — trois echelles de lecture,
+     * de la plus large a la plus fine :
+     * sections | libelles de phase | phases | etapes | nom de l'etape
+     * Les cartes commencent apres (cf. .processusDeckCard).
+     */
+    --rail-section-x: 24px;
+    --rail-phase-x: 144px;
+    --rail-step-x: 172px;
+
+    /*
+     * Hauteur fixe du bandeau du bas, calee sur le panneau « Avancement » :
+     * ~87px de contenu (titre, une ligne de mesures, la piste des sections)
+     * auxquels s'ajoutent les 22px de padding vertical du bandeau lui-meme.
+     * Fixe et non dictee par le contenu : sinon un portrait plus long ou un
+     * historique qui s'allonge redimensionnerait le carrousel au-dessus.
+     */
+    --rail-band-h: 112px;
+
+    position: relative;
+    /* 100vw compte la barre de defilement : la page deborderait a l'horizontale. */
+    width: 100%;
+    /*
+     * Tout tient dans la fenetre : titre, chronologie et bandeau d'appoint.
+     * Seul le carrousel defile, a l'interieur de sa bande.
+     */
+    height: 100vh;
+    padding-top: 60px;
+    box-sizing: border-box;
+    background-color: #DDBFA3;
+    color: var(--ink);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+#processusPage * {
+    font-family: "Playfair Display", serif;
+    box-sizing: border-box;
+}
+
+/* --- Bandeau d'informations, sous la chronologie -------------------------- */
+
+/*
+ * Portrait, avancement et historique ne servent qu'une fois le processus
+ * deroule : ils se posent apres les etapes, en trois colonnes, et ne disputent
+ * plus l'attention a la chronologie.
+ */
+.processusRail {
+    flex: 0 0 auto;
+    width: 100%;
+    /* Le bandeau ne bouge plus : la bande laissee au carrousel est stable. */
+    height: var(--rail-band-h);
+    padding: 10px 40px 12px;
+    border-top: 1px solid var(--line);
+    display: grid;
+    /*
+     * Trois panneaux, quatre colonnes : la derniere reste vide et reserve le
+     * coin ou se pose la bulle de l'assistant (fixe a right: 150px), pour
+     * qu'elle ne recouvre pas l'historique.
+     */
+    grid-template-columns:
+        minmax(0, 1fr)
+        minmax(0, 1fr)
+        minmax(0, 0.62fr)
+        360px;
+    align-items: stretch;
+    gap: 10px;
+}
+
+/*
+ * Densite propre au bandeau : ces panneaux sont un appoint, pas le sujet.
+ * Les reglages restent portes par .processusRail — les memes classes servent
+ * ailleurs sur la page (etat vide, panneau d'envoi), a leur taille normale.
+ */
+/*
+ * Chaque panneau remplit exactement la bande. Ce qui deborde defile chez lui
+ * (portrait, historique) plutot que de repousser le bandeau.
+ */
+.processusRail .processusPanel {
+    height: 100%;
+    min-height: 0;
+    padding: 9px 11px;
+    gap: 6px;
+    overflow: hidden;
+}
+
+.processusRail .processusPanelTitle {
+    font-size: 10px;
+    letter-spacing: 1.2px;
+}
+
+.processusRail .processusPanelHint {
+    font-size: 10.5px;
+    line-height: 1.35;
+}
+
+/* Le portrait passe sur deux colonnes : quatre criteres empiles doubleraient
+   la hauteur du bandeau. */
+/*
+ * Deux colonnes, deux rangees : les quatre criteres tiennent d'un bloc dans la
+ * hauteur du panneau (~53px une fois le titre pose). Les interlignes sont
+ * resserres juste ce qu'il faut — a 1.25 d'interligne, la seconde rangee
+ * debordait de deux pixels et se retrouvait tronquee.
+ */
+.processusRail .processusPortrait {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px 12px;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    align-content: start;
+}
+
+.processusRail .processusPortrait dt {
+    font-size: 8.5px;
+    letter-spacing: 0.8px;
+    line-height: 1.1;
+}
+
+.processusRail .processusPortrait dd {
+    margin-top: 0;
+    font-size: 11.5px;
+    line-height: 1.2;
+}
+
+.processusRail .processusStats {
+    gap: 5px 10px;
+}
+
+.processusRail .processusStats dt {
+    font-size: 9px;
+}
+
+.processusRail .processusStats dd {
+    margin-top: 0;
+    font-size: 13px;
+}
+
+.processusRail .processusSectionPip {
+    padding: 2px 0;
+    font-size: 9px;
+}
+
+/* --- Historique : menu deroulant ------------------------------------------ */
+
+.processusSelectTrigger {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    width: 100%;
+    padding: 6px 9px;
+    font-family: "Bitcount Single", sans-serif;
+    font-size: 11px;
+    letter-spacing: 0.5px;
+    color: var(--ink);
+    background: rgba(255, 245, 245, 0.55);
+    border: 1px solid var(--line-strong);
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.2s, border-color 0.2s;
+}
+
+.processusSelectTrigger:hover:not(:disabled) {
+    background: rgba(255, 245, 245, 0.85);
+    border-color: var(--brown);
+}
+
+.processusSelectTrigger:focus-visible {
+    outline: 1px solid var(--brown);
+    outline-offset: 1px;
+}
+
+.processusSelectTrigger:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+
+.processusSelectIcon {
+    font-size: 10px;
+    color: var(--muted);
+}
+
+/*
+ * Le menu est porte par un portail, hors de #processusPage : les variables de
+ * la page n'y arrivent pas, d'ou les valeurs litterales.
+ */
+.processusSelectContent {
+    z-index: 300;
+    max-height: 40vh;
+    overflow: hidden;
+    background: #f3e6d8;
+    border: 1px solid rgba(68, 50, 35, 0.5);
+    box-shadow: 0 10px 28px rgba(43, 33, 24, 0.28);
+}
+
+.processusSelectItem {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    padding: 7px 10px;
+    font-family: "Bitcount Single", sans-serif;
+    font-size: 11px;
+    letter-spacing: 0.5px;
+    color: #2b2118;
+    cursor: pointer;
+    outline: none;
+}
+
+.processusSelectItem[data-highlighted] {
+    background: #443223;
+    color: #fff5f5;
+}
+
+.processusSelectItemMeta {
+    font-family: "Playfair Display", serif;
+    font-size: 10px;
+    letter-spacing: 0;
+    opacity: 0.7;
+}
+
+.processusRail .processusRailActions {
+    flex: 0 0 auto;
+    gap: 7px;
+    margin-top: 0;
+}
+
+.processusRail .processusPrimaryButton,
+.processusRail .processusGhostButton {
+    padding: 5px 10px;
+    font-size: 10.5px;
+    letter-spacing: 0.5px;
+}
+
+.processusPanel {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.processusPanelTitle {
+    font-family: "Bitcount Single", sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin: 0;
+}
+
+.processusPanelHint {
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--muted);
+    margin: 0;
+}
+
+/* --- Champs --------------------------------------------------------------- */
+
+.processusField {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    min-width: 0;
+}
+
+.processusFieldLabel {
+    font-family: "Bitcount Single", sans-serif;
+    font-size: 11px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--muted);
+}
+
+.processusInput {
+    width: 100%;
+    padding: 8px 10px;
+    font-size: 13px;
+    color: inherit;
+    background: rgba(255, 245, 245, 0.55);
+    border: 1px solid var(--line);
+    border-radius: 0;
+    text-align: left;
+    transition: border-color 0.2s, background 0.2s;
+}
+
+.processusInput:hover:not(:disabled) {
+    background: rgba(255, 245, 245, 0.8);
+}
+
+.processusInput:focus-visible {
+    outline: none;
+    border-color: var(--brown);
+}
+
+.processusTextarea {
+    resize: vertical;
+    line-height: 1.5;
+}
+
+/* --- Portrait (criteres en lecture seule) --------------------------------- */
+
+.processusPortrait {
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.processusPortrait dt {
+    font-family: "Bitcount Single", sans-serif;
+    font-size: 10px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--muted);
+}
+
+.processusPortrait dd {
+    margin: 2px 0 0;
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+/* --- Boutons -------------------------------------------------------------- */
+
+.processusRailActions {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 4px;
+}
+
+/* Un <Link> qui doit se lire comme un bouton. */
+.processusLinkButton {
+    display: inline-block;
+    text-decoration: none;
+    text-align: center;
+}
+
+.processusPrimaryButton {
+    font-family: "Bitcount Single", sans-serif;
+    font-size: 13px;
+    letter-spacing: 1px;
+    padding: 9px 18px;
+    color: #fff5f5;
+    background: var(--brown);
+    border: 1px solid var(--brown);
+    cursor: pointer;
+    transition: transform 0.25s, background 0.25s, color 0.25s;
+}
+
+.processusPrimaryButton:hover:not(:disabled) {
+    background: var(--ink);
+    transform: skew(-8deg);
+}
+
+.processusPrimaryButton:disabled {
+    opacity: 0.4;
+    cursor: default;
+}
+
+.processusGhostButton {
+    font-family: "Bitcount Single", sans-serif;
+    font-size: 12px;
+    letter-spacing: 0.5px;
+    padding: 8px 12px;
+    color: var(--brown);
+    background: transparent;
+    border: 1px solid var(--line-strong);
+    cursor: pointer;
+    transition: background 0.25s, color 0.25s;
+}
+
+.processusGhostButton:hover:not(:disabled) {
+    background: var(--brown);
+    color: #fff5f5;
+}
+
+.processusGhostButton:disabled {
+    opacity: 0.4;
+    cursor: default;
+}
+
+/* --- Avancement ----------------------------------------------------------- */
+
+/* Les quatre mesures se lisent d'une traite, sur une seule ligne. */
+.processusStats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px 12px;
+    margin: 0;
+}
+
+.processusStats dt {
+    font-family: "Bitcount Single", sans-serif;
+    font-size: 10px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--muted);
+}
+
+.processusStats dd {
+    margin: 2px 0 0;
+    font-size: 19px;
+    font-weight: 600;
+}
+
+.processusSectionTrack {
+    display: flex;
+    gap: 6px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.processusSectionPip {
+    flex: 1;
+    text-align: center;
+    padding: 5px 0;
+    font-family: "Bitcount Single", sans-serif;
+    font-size: 12px;
+    border: 1px solid var(--line-strong);
+    color: var(--muted);
+}
+
+.processusSectionPip--done {
+    background: var(--brown);
+    border-color: var(--brown);
+    color: #fff5f5;
+}
+
+.processusSectionPip--active {
+    border-color: var(--accent);
+    color: var(--accent);
+    animation: processusPulse 1.6s ease-in-out infinite alternate;
+}
+
+@keyframes processusPulse {
+    from { background: transparent; }
+    to { background: rgba(26, 111, 143, 0.16); }
+}
+
+/* --- Scene principale ----------------------------------------------------- */
+
+/* Prend toute la hauteur restante : c'est la chronologie qui absorbe le jeu. */
+.processusStage {
+    flex: 1 1 auto;
+    width: 100%;
+    min-width: 0;
+    min-height: 0;
+    padding: 8px 40px 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+/* Le code du processus, seul et centre : la tete de page reste mince. */
+.processusStageHead {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding-bottom: 7px;
+    border-bottom: 1px solid var(--line);
+}
+
+.processusStageTitle {
+    font-family: "Bitcount Single", sans-serif;
+    font-size: 23px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    line-height: 1.1;
+    margin: 0;
+    overflow-wrap: anywhere;
+}
+
+.processusError {
+    margin: 16px 0 0;
+    padding: 10px 14px;
+    font-size: 13px;
+    color: #7a1f12;
+    background: rgba(122, 31, 18, 0.1);
+    border-left: 3px solid #7a1f12;
+}
+
+/* La scene est bornee a la fenetre : l'etat vide se cale sans pousser dehors. */
+.processusEmpty {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 0;
+    text-align: center;
+}
+
+.processusEmptyTitle {
+    font-size: 22px;
+    margin: 0;
+}
+
+.processusEmptyHint {
+    max-width: 460px;
+    margin: 10px auto 0;
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--muted);
+}
+
+.processusEmpty .processusLinkButton {
+    margin-top: 18px;
+}
+
+
+/* --- Chronologie : un carrousel 3D, une etape a la fois ------------------- */
+
+.processusSteps {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+/*
+ * Mode carrousel (ecrans larges). Le cadre defile sur une course purement
+ * abstraite : elle ne deplace aucune carte, elle avance un curseur dont le
+ * script deduit la profondeur de chacune. Le calage force l'arret sur un cran.
+ */
+.processusSteps--deck {
+    --deck-perspective: 1400px;
+    /* Le cadre prend la hauteur laissee par le titre et le bandeau : rien ne
+       depasse de la fenetre, et le defilement reste confine au carrousel. */
+    scroll-snap-type: y mandatory;
+    overscroll-behavior: contain;
+    scrollbar-width: none;
+}
+
+.processusSteps--deck::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+}
+
+/* Le cadre se prend le focus : les fleches font defiler le carrousel. */
+.processusSteps--deck:focus-visible {
+    outline: 1px solid var(--line-strong);
+    outline-offset: -1px;
+}
+
+/* Bloc de course : hauteur = un cran par etape + la hauteur visible. */
+.processusDeck {
+    position: relative;
+}
+
+/* Crans invisibles sur lesquels le defilement se cale. */
+.processusDeckSnap {
+    position: absolute;
+    left: 0;
+    width: 1px;
+    height: 1px;
+    pointer-events: none;
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+}
+
+/*
+ * Plan fixe, colle au centre du cadre. De hauteur nulle : les cartes s'y
+ * accrochent par leur milieu (translateY(-50%)), donc la carte posee est
+ * toujours centree, quelle que soit sa taille.
+ */
+.processusDeckViewport {
+    position: relative;
+}
+
+.processusSteps--deck .processusDeckViewport {
+    position: sticky;
+    /* top est pose en ligne : la moitie de la hauteur visible, en pixels
+       (un pourcentage se lirait sur le bloc de course, bien plus haut). */
+    height: 0;
+    perspective: var(--deck-perspective);
+    perspective-origin: 50% 0;
+}
+
+/*
+ * Rail unique : le filet vertical, ses billes d'etape et ses jalons de phase
+ * restent a plat devant la scene. Une seule ligne porte donc les deux niveaux
+ * de navigation, sur l'axe meme du defilement.
+ */
+.processusDeckRail {
+    position: absolute;
+    top: 0;
+    left: var(--rail-step-x);
+    width: 0;
+    height: 0;
+    z-index: 120;
+    /* Le rail ne capte rien : seules ses billes sont cliquables. */
+    pointer-events: none;
+}
+
+/* Rail des sections : meme construction, la colonne la plus a gauche. */
+.processusDeckSectionRail {
+    position: absolute;
+    top: 0;
+    left: var(--rail-section-x);
+    width: 0;
+    height: 0;
+    z-index: 120;
+    pointer-events: none;
+}
+
+/*
+ * La bille de section porte sa lettre (A a E) : elle se nomme elle-meme, ce
+ * qui epargne une colonne de libelles a la gouttiere.
+ */
+.processusSectionDot {
+    position: absolute;
+    left: 0;
+    width: 17px;
+    height: 17px;
+    padding: 0;
+    border-radius: 50%;
+    background: transparent;
+    border: 1px solid rgba(68, 50, 35, 0.45);
+    transform: translate(-50%, -50%);
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: "Bitcount Single", sans-serif;
+    font-size: 9px;
+    line-height: 1;
+    color: var(--muted);
+
+    cursor: pointer;
+    pointer-events: auto;
+    overflow: visible;
+    transition: width 0.28s ease, height 0.28s ease, background 0.28s, border-color 0.28s,
+        color 0.28s, box-shadow 0.28s;
+}
+
+.processusSectionDot:hover {
+    border-color: var(--ink);
+    color: var(--ink);
+    box-shadow: 0 0 0 4px rgba(43, 33, 24, 0.1);
+}
+
+.processusSectionDot:focus-visible {
+    outline: 1px solid var(--brown);
+    outline-offset: 3px;
+}
+
+/* L'encre la plus sombre pour l'echelle la plus large. */
+.processusSectionDot--active {
+    width: 21px;
+    height: 21px;
+    font-size: 10px;
+    background: var(--ink);
+    border-color: var(--ink);
+    color: #fff5f5;
+    box-shadow: 0 0 0 4px rgba(43, 33, 24, 0.14);
+}
+
+/* Rail des phases : entre les sections et les etapes. */
+.processusDeckPhaseRail {
+    position: absolute;
+    top: 0;
+    left: var(--rail-phase-x);
+    width: 0;
+    height: 0;
+    z-index: 120;
+    pointer-events: none;
+}
+
+.processusPhaseDot {
+    position: absolute;
+    left: 0;
+    width: 11px;
+    height: 11px;
+    padding: 0;
+    border-radius: 50%;
+    background: transparent;
+    border: 1px solid rgba(68, 50, 35, 0.45);
+    transform: translate(-50%, -50%);
+    cursor: pointer;
+    pointer-events: auto;
+    overflow: visible;
+    transition: width 0.28s ease, height 0.28s ease, background 0.28s, border-color 0.28s, box-shadow 0.28s;
+}
+
+.processusPhaseDot:hover {
+    border-color: var(--brown);
+    box-shadow: 0 0 0 4px rgba(68, 50, 35, 0.12);
+}
+
+.processusPhaseDot:focus-visible {
+    outline: 1px solid var(--brown);
+    outline-offset: 3px;
+}
+
+/*
+ * La phase posee est marquee a l'encre brune, quand l'etape posee l'est en
+ * accent : les deux lignes restent distinctes d'un coup d'oeil.
+ */
+.processusPhaseDot--active {
+    width: 15px;
+    height: 15px;
+    background: var(--brown);
+    border-color: var(--brown);
+    box-shadow: 0 0 0 4px rgba(68, 50, 35, 0.16);
+}
+
+/* Libelles poses a gauche du rail, alignes sur lui par leur bord droit. */
+.processusPhaseDotTag {
+    position: absolute;
+    right: calc(100% + 10px);
+    top: 50%;
+    transform: translateY(-50%);
+    width: 84px;
+    text-align: right;
+    font-family: "Bitcount Single", sans-serif;
+    font-size: 9px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    line-height: 1.25;
+    color: var(--muted);
+    pointer-events: none;
+}
+
+.processusPhaseDotTag--active {
+    font-family: "Playfair Display", serif;
+    font-size: 11.5px;
+    font-weight: 600;
+    letter-spacing: 0;
+    text-transform: none;
+    line-height: 1.3;
+    color: var(--ink);
+}
+
+/* Le filet couvre exactement la course des billes (hauteur posee en ligne). */
+.processusDeckRailLine {
+    position: absolute;
+    left: 0;
+    width: 1px;
+    background: var(--line-strong);
+}
+
+/*
+ * Billes fixes et toutes identiques : le rail donne l'echelle du processus,
+ * pas son decoupage. Leur position est posee une fois (top en ligne), et le
+ * defilement ne fait qu'y promener l'etat actif — seule distinction visuelle.
+ */
+.processusDeckDot {
+    position: absolute;
+    left: 0;
+    width: 7px;
+    height: 7px;
+    padding: 0;
+    border-radius: 50%;
+    background: transparent;
+    border: 1px solid rgba(68, 50, 35, 0.42);
+    transform: translate(-50%, -50%);
+    cursor: pointer;
+    pointer-events: auto;
+    /* L'etiquette est posee hors de la bille : le bouton ne doit pas la rogner. */
+    overflow: visible;
+    transition: width 0.28s ease, height 0.28s ease, background 0.28s, border-color 0.28s, box-shadow 0.28s;
+}
+
+.processusDeckDot:hover {
+    border-color: var(--brown);
+    box-shadow: 0 0 0 4px rgba(68, 50, 35, 0.12);
+}
+
+.processusDeckDot:focus-visible {
+    outline: 1px solid var(--brown);
+    outline-offset: 3px;
+}
+
+/* L'etape posee, et elle seule. */
+.processusDeckDot--active {
+    width: 13px;
+    height: 13px;
+    background: var(--accent);
+    border-color: var(--accent);
+    box-shadow: 0 0 0 4px rgba(26, 111, 143, 0.18);
+}
+
+/*
+ * Nom de l'etape posee. Une seule etiquette est montee a la fois : elle peut
+ * donc respirer sur deux ou trois lignes sans encombrer le rail.
+ */
+.processusDeckDotTag {
+    position: absolute;
+    left: calc(100% + 12px);
+    top: 50%;
+    transform: translateY(-50%);
+    width: 140px;
+    font-size: 12px;
+    line-height: 1.3;
+    color: var(--ink);
+    pointer-events: none;
+}
+
+/* --- Cartes du carrousel -------------------------------------------------- */
+
+.processusDeckCard {
+    position: relative;
+    margin-bottom: 20px;
+}
+
+.processusSteps--deck .processusDeckCard {
+    position: absolute;
+    top: 0;
+    /* Apres la gouttiere : trois rails et leurs libelles y logent. */
+    left: 340px;
+    right: 12px;
+    max-width: 1120px;
+    margin: 0;
+    transform-origin: 50% 50%;
+    backface-visibility: hidden;
+    /* Etat de depart : le placement 3D est pose par le script, avant peinture. */
+    visibility: hidden;
+    opacity: 0;
+}
+
+/* La bille de gauche est portee par le rail : la carte n'en garde pas. */
+.processusSteps--deck .processusStepMarker {
+    display: none;
+}
+
+.processusSteps--deck .processusStep {
+    gap: 0;
+    animation: none;
+}
+
+/*
+ * La profondeur est portee par la carte entiere : le corps reste a l'echelle.
+ * Une etape trop longue defile chez elle puis rend la main au carrousel — d'ou
+ * l'absence d'overscroll-behavior, qui bloquerait le relais.
+ */
+.processusSteps--deck .processusStepBody {
+    transform: none;
+    opacity: 1;
+    max-height: var(--deck-card-max, 70vh);
+    overflow-y: auto;
+    box-shadow: 0 18px 40px rgba(43, 33, 24, 0.18);
+}
+
+.processusSteps--deck .processusDeckCard--active .processusStepBody {
+    background: var(--panel-solid);
+    box-shadow: 0 30px 70px rgba(43, 33, 24, 0.3);
+}
+
+/* L'etape posee se lit d'un peu plus loin : elle gagne en corps. */
+.processusSteps--deck .processusDeckCard--active .processusStepHead {
+    padding: 16px 18px;
+}
+
+.processusSteps--deck .processusDeckCard--active .processusStepName {
+    font-size: 21px;
+}
+
+.processusSteps--deck .processusDeckCard--active .processusStepDescription {
+    font-size: 14px;
+}
+
+.processusSteps--deck .processusBoundary {
+    margin-left: 0;
+}
+
+.processusSteps--deck .processusDone {
+    margin: 0;
+}
+
+.processusStep {
+    display: flex;
+    gap: 16px;
+    animation: processusStepIn 0.35s ease-out both;
+}
+
+@keyframes processusStepIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: none; }
+}
+
+/* Filet vertical + pastille : la ligne du temps. */
+/* Le filet est porte par le rail (ou par le plan, en liste) : ici, la bille seule. */
+.processusStepMarker {
+    flex: 0 0 24px;
+    display: flex;
+    justify-content: center;
+    position: relative;
+}
+
+/* Meme principe que la barre de phases : la bille grossit sur l'etape posee. */
+.processusStepDot {
+    position: relative;
+    margin-top: 14px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #DDBFA3;
+    border: 1px solid var(--line-strong);
+    transition: width 0.32s ease, height 0.32s ease, margin-top 0.32s ease, background 0.32s, border-color 0.32s, box-shadow 0.32s;
+}
+
+.processusStep--active .processusStepDot {
+    width: 20px;
+    height: 20px;
+    margin-top: 9px;
+    background: var(--accent);
+    border-color: var(--accent);
+    box-shadow: 0 0 0 5px rgba(26, 111, 143, 0.18);
+}
+
+.processusStep--current .processusStepDot {
+    background: var(--accent);
+    border-color: var(--accent);
+}
+
+/* L'etape franchie garde une bille pleine, plus discrete. */
+.processusStep:not(.processusStep--active):not(.processusStep--current) .processusStepDot {
+    background: var(--brown);
+    border-color: var(--brown);
+}
+
+/*
+ * Les cartes non posees reculent : plus petites, estompees et non cliquables.
+ * L'echelle porte sur la carte seule (pas sur la ligne) pour que les billes
+ * restent alignees sur le filet.
+ */
+.processusStepBody {
+    flex: 1 1 auto;
+    min-width: 0;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    transform: scale(0.94);
+    transform-origin: left center;
+    opacity: 0.32;
+    transition: transform 0.35s ease, opacity 0.35s ease, border-color 0.3s, background 0.3s;
+}
+
+.processusStep--active .processusStepBody {
+    transform: none;
+    opacity: 1;
+}
+
+.processusStep:not(.processusStep--active) .processusStepBody {
+    pointer-events: none;
+}
+
+.processusStep--current .processusStepBody {
+    background: var(--panel-solid);
+    border-color: var(--accent);
+}
+
+.processusStepHead {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 14px;
+}
+
+.processusStepHead--clickable {
+    cursor: pointer;
+}
+
+.processusStepHead--clickable:hover {
+    background: rgba(255, 245, 245, 0.35);
+}
+
+.processusStepHead:focus-visible {
+    outline: 1px solid var(--brown);
+    outline-offset: -1px;
+}
+
+.processusStepIndex {
+    font-family: "Bitcount Single", sans-serif;
+    font-size: 16px;
+    line-height: 1.2;
+    color: rgba(43, 33, 24, 0.35);
+}
+
+.processusStepHeadText {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.processusStepMeta {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 4px;
+}
+
+.processusStepCode {
+    font-family: "Bitcount Single", sans-serif;
+    font-size: 11px;
+    letter-spacing: 1px;
+    color: var(--muted);
+}
+
+.processusTag {
+    font-family: "Bitcount Single", sans-serif;
+    font-size: 10px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    padding: 2px 7px;
+    border: 1px solid var(--line-strong);
+    color: var(--muted);
+}
+
+.processusTag--question {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+.processusTag--send {
+    border-color: #8a5a1f;
+    color: #8a5a1f;
+}
+
+.processusTag--rag {
+    border-color: var(--done);
+    color: var(--done);
+}
+
+.processusStepPrice {
+    font-family: "Bitcount Single", sans-serif;
+    font-size: 11px;
+    color: var(--done);
+}
+
+.processusStepName {
+    font-size: 17px;
+    font-weight: 600;
+    line-height: 1.35;
+    margin: 0;
+}
+
+.processusChevron {
+    flex: 0 0 auto;
+    font-size: 12px;
+    color: var(--muted);
+    transition: transform 0.25s;
+}
+
+.processusChevron--open {
+    transform: rotate(180deg);
+}
+
+.processusStepDetails {
+    padding: 0 14px 14px 42px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.processusStepDescription {
+    font-size: 13px;
+    line-height: 1.65;
+    white-space: pre-line;
+    margin: 0;
+}
+
+.processusStepDone,
+.processusStepRag {
+    font-size: 12.5px;
+    line-height: 1.6;
+    margin: 0;
+    padding: 8px 10px;
+    background: rgba(255, 245, 245, 0.5);
+    border-left: 2px solid var(--line-strong);
+}
+
+.processusStepDoneLabel {
+    display: block;
+    font-family: "Bitcount Single", sans-serif;
+    font-size: 10px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 3px;
+}
+
+.processusStepRag {
+    white-space: pre-line;
+    border-left-color: var(--done);
+}
+
+/* --- Documents de l'etape ------------------------------------------------- */
+
+.processusDocuments {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.processusDocumentsLabel {
+    font-family: "Bitcount Single", sans-serif;
+    font-size: 10px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--muted);
+}
+
+.processusDocumentsList {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.processusDocument {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 9px;
+    font-size: 12px;
+    background: rgba(255, 245, 245, 0.62);
+    border: 1px solid var(--line-strong);
+    overflow-wrap: anywhere;
+}
+
+.processusDocumentIcon {
+    font-size: 11px;
+    color: var(--muted);
+}
+
+.processusStepSources {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+}
+
+.processusSourceLink {
+    font-size: 12px;
+    color: var(--brown);
+    text-decoration: none;
+    border-bottom: 1px solid var(--line-strong);
+    padding-bottom: 1px;
+}
+
+.processusSourceLink:hover {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+}
+
+.processusStepChoice {
+    margin: 0;
+    padding: 9px 14px 12px 42px;
+    font-size: 13px;
+}
+
+.processusStepChoiceLabel {
+    display: block;
+    font-family: "Bitcount Single", sans-serif;
+    font-size: 10px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--done);
+    margin-bottom: 2px;
+}
+
+.processusBoundary {
+    margin: 10px 0 0 40px;
+    opacity: 0.55;
+    font-family: "Bitcount Single", sans-serif;
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.processusBoundary::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: var(--line);
+}
+
+/* --- Noeud de decision ---------------------------------------------------- */
+
+.processusDecision {
+    padding: 14px;
+    margin: 0 14px 14px 42px;
+    background: rgba(26, 111, 143, 0.07);
+    border: 1px solid rgba(26, 111, 143, 0.3);
+}
+
+.processusDecisionQuestion {
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 1.45;
+    margin: 0;
+}
+
+.processusDecisionHint {
+    font-size: 12px;
+    color: var(--muted);
+    margin: 5px 0 12px;
+}
+
+.processusOptions {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 12px;
+}
+
+.processusOption {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 5px;
+    padding: 12px;
+    text-align: left;
+    background: rgba(255, 245, 245, 0.75);
+    border: 1px solid var(--line-strong);
+    cursor: pointer;
+    transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+}
+
+.processusOption:hover:not(:disabled) {
+    transform: translateY(-2px);
+    border-color: var(--accent);
+    box-shadow: 0 6px 16px rgba(43, 33, 24, 0.16);
+}
+
+.processusOption:disabled {
+    opacity: 0.55;
+    cursor: default;
+}
+
+.processusOption--picked {
+    border-color: var(--accent);
+    background: rgba(255, 245, 245, 0.95);
+}
+
+.processusOptionCode {
+    font-family: "Bitcount Single", sans-serif;
+    font-size: 11px;
+    letter-spacing: 1px;
+    color: var(--muted);
+}
+
+.processusOptionName {
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.35;
+}
+
+.processusOptionDescription {
+    font-size: 12px;
+    line-height: 1.55;
+    color: var(--muted);
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.processusOptionGo {
+    margin-top: 4px;
+    font-family: "Bitcount Single", sans-serif;
+    font-size: 11px;
+    letter-spacing: 1px;
+    color: var(--accent);
+}
+
+/* --- Etape d'envoi -------------------------------------------------------- */
+
+.processusSend {
+    padding: 14px;
+    margin: 0 14px 14px 42px;
+    background: rgba(138, 90, 31, 0.07);
+    border: 1px solid rgba(138, 90, 31, 0.3);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.processusSendIntro {
+    font-size: 13px;
+    line-height: 1.6;
+    margin: 0;
+}
+
+.processusSendGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+}
+
+.processusExtras {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.processusExtrasHead {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.processusExtraRow {
+    display: grid;
+    grid-template-columns: 1fr 1fr auto;
+    gap: 8px;
+}
+
+.processusSend .processusPrimaryButton {
+    align-self: flex-start;
+}
+
+/* --- Fin de processus ----------------------------------------------------- */
+
+.processusDone {
+    margin: 8px 0 0 28px;
+    padding: 18px 20px;
+    background: rgba(36, 99, 30, 0.1);
+    border-left: 3px solid var(--done);
+}
+
+.processusDoneTitle {
+    font-family: "Bitcount Single", sans-serif;
+    font-size: 14px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--done);
+    margin: 0 0 8px;
+}
+
+.processusDoneText {
+    font-size: 13px;
+    line-height: 1.6;
+    margin: 0;
+}
+
+/* --- Repere de phase dans le flux (ecrans etroits) ------------------------ */
+
+/*
+ * Sans carrousel il n'y a pas de rail : l'entree de phase se lit alors dans la
+ * chronologie elle-meme, pour ne pas perdre ce niveau de reperage.
+ */
+.processusPhaseMark {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 22px 0 10px;
+    font-family: "Bitcount Single", sans-serif;
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--muted);
+}
+
+.processusPhaseMark::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: var(--line);
+}
+
+.processusPhaseMarkKey {
+    padding: 3px 9px;
+    color: #fff5f5;
+    background: var(--brown);
+    letter-spacing: 1px;
+}
+
+/* --- Ecrans etroits ------------------------------------------------------- */
+
+@media (max-width: 1024px) {
+    /*
+     * Sans carrousel la chronologie est une liste : elle ne peut pas tenir dans
+     * la fenetre, la page reprend donc son defilement.
+     */
+    #processusPage {
+        height: auto;
+        min-height: 100vh;
+        overflow: visible;
+    }
+
+    /* Panneaux empiles et page defilante : la hauteur fixe n'a plus de sens. */
+    .processusRail {
+        height: auto;
+        padding: 20px 20px 48px;
+        grid-template-columns: 1fr;
+    }
+
+    .processusRail .processusPanel {
+        height: auto;
+        overflow: visible;
+    }
+
+    .processusRail .processusPortrait {
+        overflow-y: visible;
+    }
+
+    .processusStage {
+        flex: 0 0 auto;
+        overflow: visible;
+        padding: 16px 20px 20px;
+    }
+
+    /* Sur petit ecran la page entiere defile : ni carrousel, ni mise en retrait. */
+    .processusSteps {
+        overflow: visible;
+    }
+
+    /* Le carrousel est desactive : le filet vertical revient dans le flux. */
+    .processusDeckViewport::before {
+        content: "";
+        position: absolute;
+        left: 12px;
+        transform: translateX(-50%);
+        top: 0;
+        bottom: 0;
+        width: 1px;
+        background: var(--line-strong);
+    }
+
+    .processusStepBody {
+        transform: none;
+        opacity: 1;
+    }
+
+    .processusStep:not(.processusStep--active) .processusStepBody {
+        pointer-events: auto;
+    }
+
+    .processusDecision,
+    .processusSend,
+    .processusStepDetails,
+    .processusStepChoice {
+        margin-left: 14px;
+        padding-left: 14px;
+    }
 }

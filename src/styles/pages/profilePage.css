@@ -1,3 +1,175 @@
+/* Page "Profil" — meme grammaire visuelle que Processus et Utilisateurs :
+   fond sable #DDBFA3, encre brune, Playfair Display / Bitcount Single. */
+
 #profilePage {
-    padding: 80px 40px;
+    --ink: #2b2118;
+    --brown: #443223;
+    --line: rgba(68, 50, 35, 0.26);
+    --line-strong: rgba(68, 50, 35, 0.5);
+    --panel: rgba(255, 245, 245, 0.38);
+    --muted: rgba(43, 33, 24, 0.62);
+    --done: #24631e;
+    --danger: #7a1f12;
+
+    width: 100vw;
+    min-height: 100vh;
+    padding: 84px 40px 40px;
+    box-sizing: border-box;
+    background-color: #DDBFA3;
+    color: var(--ink);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 18px;
+    overflow-y: auto;
+}
+
+#profilePage * {
+    font-family: "Playfair Display", serif;
+    box-sizing: border-box;
+}
+
+.profileHead {
+    width: 100%;
+    max-width: 620px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--line);
+}
+
+.profileEyebrow {
+    font-family: "Bitcount Single", sans-serif;
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0;
+}
+
+.profileTitle {
+    font-size: 30px;
+    font-weight: 600;
+    margin: 2px 0 0;
+    overflow-wrap: anywhere;
+}
+
+.profilePanel {
+    width: 100%;
+    max-width: 620px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.profilePanelTitle {
+    font-family: "Bitcount Single", sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin: 0;
+}
+
+.profileIdentity {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px;
+    margin: 0;
+}
+
+.profileIdentity dt {
+    font-family: "Bitcount Single", sans-serif;
+    font-size: 10px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--muted);
+}
+
+.profileIdentity dd {
+    margin: 3px 0 0;
+    font-size: 15px;
+    overflow-wrap: anywhere;
+}
+
+.profileForm {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.profileField {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.profileFieldLabel {
+    font-family: "Bitcount Single", sans-serif;
+    font-size: 11px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--muted);
+}
+
+.profileInput {
+    width: 100%;
+    padding: 8px 10px;
+    font-size: 13px;
+    color: inherit;
+    background: rgba(255, 245, 245, 0.55);
+    border: 1px solid var(--line);
+    border-radius: 0;
+    transition: border-color 0.2s, background 0.2s;
+}
+
+.profileInput:hover {
+    background: rgba(255, 245, 245, 0.8);
+}
+
+.profileInput:focus-visible {
+    outline: none;
+    border-color: var(--brown);
+}
+
+.profilePrimaryButton {
+    align-self: flex-start;
+    font-family: "Bitcount Single", sans-serif;
+    font-size: 13px;
+    letter-spacing: 1px;
+    padding: 9px 18px;
+    color: #fff5f5;
+    background: var(--brown);
+    border: 1px solid var(--brown);
+    cursor: pointer;
+    transition: transform 0.25s, background 0.25s;
+}
+
+.profilePrimaryButton:hover:not(:disabled) {
+    background: var(--ink);
+    transform: skew(-8deg);
+}
+
+.profilePrimaryButton:disabled {
+    opacity: 0.4;
+    cursor: default;
+}
+
+.profileError {
+    margin: 0;
+    padding: 10px 14px;
+    font-size: 13px;
+    color: var(--danger);
+    background: rgba(122, 31, 18, 0.1);
+    border-left: 3px solid var(--danger);
+}
+
+.profileNotice {
+    margin: 0;
+    padding: 10px 14px;
+    font-size: 13px;
+    color: var(--done);
+    background: rgba(36, 99, 30, 0.1);
+    border-left: 3px solid var(--done);
 }

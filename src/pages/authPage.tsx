@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import PasswordInput from "../components/passwordInput";
 import '../styles/pages/authPage.css'
 
 /**
@@ -13,6 +14,10 @@ import '../styles/pages/authPage.css'
 function AuthPage() {
     const { login } = useAuth();
     const navigate = useNavigate();
+    const location = useLocation();
+
+    // Destination memorisee par ProtectedRoute quand l'acces a ete refuse.
+    const from = (location.state as { from?: { pathname: string; search?: string } } | null)?.from;
 
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
@@ -28,7 +33,7 @@ function AuthPage() {
 
         setLoading(false);
         if (result.ok) {
-            navigate("/");
+            navigate(from ? `${from.pathname}${from.search ?? ""}` : "/", { replace: true });
         } else {
             setError(result.error ?? "Echec de la connexion.");
         }
@@ -52,12 +57,11 @@ function AuthPage() {
                     />
 
                     <label htmlFor="authPassword">Mot de passe</label>
-                    <input
+                    <PasswordInput
                         id="authPassword"
                         className="authFormInputField"
-                        type="password"
                         value={password}
-                        onChange={(e) => setPassword(e.target.value)}
+                        onChange={setPassword}
                         autoComplete="current-password"
                         required
                     />

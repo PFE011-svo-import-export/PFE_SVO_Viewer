@@ -8,8 +8,7 @@
  * naturellement le sien.
  */
 
-const LEGISLATION_API_URL =
-    import.meta.env.VITE_LEGISLATION_API_URL ?? "http://localhost:8000";
+const LEGISLATION_API_URL = import.meta.env.VITE_LEGISLATION_API_URL ?? "http://localhost:8000";
 
 /**
  * Pose une question a l'assistant et renvoie sa reponse.
@@ -21,10 +20,7 @@ const LEGISLATION_API_URL =
  * Le serveur repond en SSE : des lignes "data: {json}", separees par une ligne
  * vide, et un "data: [DONE]" final.
  */
-export async function askQuestionStream(
-    prompt: string,
-    onChunk: (text: string) => void,
-): Promise<void> {
+export async function askQuestionStream(prompt: string, onChunk: (text: string) => void): Promise<void> {
     let response: Response;
     try {
         response = await fetch(`${LEGISLATION_API_URL}/api/v1/legislation/generate/stream`, {
