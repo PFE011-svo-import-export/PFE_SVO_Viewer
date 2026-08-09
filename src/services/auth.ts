@@ -83,14 +83,18 @@ export function logout(): void {
  */
 export async function authFetch(path: string, options: RequestInit = {}): Promise<Response> {
     const token = getToken();
+    const headers = new Headers(options.headers);
+
+    // FormData doit conserver le Content-Type multipart et la boundary produits
+    // par le navigateur. Le forcer a JSON casse le binding IFormFile cote API.
+    if (!(options.body instanceof FormData) && !headers.has("Content-Type")) {
+        headers.set("Content-Type", "application/json");
+    }
+    if (token) headers.set("Authorization", `Bearer ${token}`);
 
     const response = await fetch(`${API_URL}${path}`, {
         ...options,
-        headers: {
-            "Content-Type": "application/json",
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-            ...options.headers,
-        },
+        headers,
     });
 
     if (response.status === 401) {

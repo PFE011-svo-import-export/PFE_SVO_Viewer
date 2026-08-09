@@ -1150,6 +1150,124 @@
     color: var(--muted);
 }
 
+.processusUpload {
+    margin-top: 10px;
+    padding: 12px;
+    border: 1px solid var(--line-strong);
+    background: rgba(255, 248, 244, 0.72);
+}
+
+.processusUploadHead {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.processusUploadHint,
+.processusUploadNotice,
+.processusUploadError {
+    margin: 4px 0 0;
+    font-size: 12px;
+    line-height: 1.4;
+}
+
+.processusUploadHint,
+.processusUploadNotice {
+    color: var(--muted);
+}
+
+.processusUploadError {
+    color: #a52828;
+}
+
+.processusUploadButton {
+    flex: 0 0 auto;
+    padding: 8px 12px;
+    border-radius: 999px;
+    background: var(--brown);
+    color: white;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.processusUploadButton input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+}
+
+.processusUploadButton--disabled {
+    opacity: 0.48;
+    cursor: not-allowed;
+}
+
+.processusUploadList {
+    display: grid;
+    gap: 8px;
+    margin: 12px 0 0;
+    padding: 0;
+    list-style: none;
+}
+
+.processusUploadList li {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.processusUploadFile {
+    display: grid;
+    min-width: 0;
+    margin-right: auto;
+}
+
+.processusUploadFile strong {
+    overflow: hidden;
+    font-size: 12px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.processusUploadFile small {
+    color: var(--muted);
+}
+
+.processusUploadList button {
+    border: 0;
+    background: transparent;
+    color: var(--brown);
+    font: inherit;
+    font-size: 11px;
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.processusUploadList button:disabled {
+    opacity: 0.5;
+    cursor: wait;
+}
+
+@media (max-width: 680px) {
+    .processusUploadHead {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .processusUploadList li {
+        align-items: flex-start;
+        flex-wrap: wrap;
+    }
+
+    .processusUploadFile {
+        width: calc(100% - 24px);
+    }
+}
+
 .processusStepSources {
     display: flex;
     flex-wrap: wrap;
