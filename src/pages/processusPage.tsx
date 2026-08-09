@@ -13,6 +13,7 @@ import {
 import { Link, useSearchParams } from "react-router-dom";
 import * as Select from "@radix-ui/react-select";
 import ChatBot from "../components/footer/chatBot";
+import StepDocumentManager, { allowsDocumentUpload } from "../components/StepDocumentManager";
 import {
     getIncoterms,
     getMerchandise,
@@ -215,6 +216,7 @@ function StepCard({
     position,
     isCurrent,
     isActive,
+    documentProcessId,
     chosenLabel,
     children,
 }: {
@@ -224,10 +226,13 @@ function StepCard({
     isCurrent: boolean;
     /** Le defilement est pose sur cette etape (grosse bille). */
     isActive: boolean;
+    /** Null tant que le processus n'est pas persiste. */
+    documentProcessId: number | null;
     chosenLabel?: string;
     children?: ReactNode;
 }) {
     const [expanded, setExpanded] = useState(isActive);
+    const canUploadDocument = allowsDocumentUpload(step.code);
 
     // L'etape sur laquelle on est posé s'ouvre et prend toute la place; les
     // autres se replient en arriere-plan (le choix retenu, lui, reste visible).
@@ -237,7 +242,7 @@ function StepCard({
 
     const hasDetails = Boolean(
         step.description || step.definitionOfDone || step.informationSource || step.originalSource ||
-        step.documents.length > 0,
+        step.documents.length > 0 || canUploadDocument,
     );
 
     return (
@@ -296,6 +301,9 @@ function StepCard({
                             <p className="processusStepRag">{String(step.responseValue)}</p>
                         )}
                         <StepDocuments step={step} />
+                        {canUploadDocument && (
+                            <StepDocumentManager processId={documentProcessId} stepCode={step.code} />
+                        )}
                         <SourceLinks step={step} />
                     </div>
                 )}
@@ -920,6 +928,7 @@ function ProcessusPage() {
     const isCreated = result?.Status === "Created";
     /** Le bilan de fin occupe un cran de plus que la derniere etape. */
     const doneResult = result?.Status === "Created" ? result : null;
+    const documentProcessId = doneResult?.processId ?? openedProcessId;
     const slotCount = timeline.length + (doneResult ? 1 : 0);
 
     /**
@@ -1445,6 +1454,7 @@ function ProcessusPage() {
                                                 position={position}
                                                 isCurrent={isCurrent}
                                                 isActive={position === activePosition}
+                                                documentProcessId={documentProcessId}
                                                 chosenLabel={choices[step.code]}
                                             >
                                                 {isCurrent && result?.Status === "Draft" && (
